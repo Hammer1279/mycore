@@ -20,12 +20,12 @@ package org.mycore.orcid.oauth;
 
 import java.io.IOException;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status.Family;
-import javax.ws.rs.core.Response.StatusType;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.StatusType;
+import jakarta.ws.rs.core.Response.Status.Family;
 
 /**
  * Represents the response on a token request against the OAuth2 API of orcid.org.
