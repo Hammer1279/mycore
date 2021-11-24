@@ -20,12 +20,17 @@ package org.mycore.restapi.v2;
 
 import static org.mycore.restapi.v2.MCRRestAuthorizationFilter.PARAM_CLASSID;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.Consumes;
@@ -34,6 +39,8 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.GenericEntity;
@@ -41,17 +48,26 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.xml.bind.annotation.XmlElementWrapper;
 
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocumentList;
+import org.jdom2.Element;
 import org.mycore.datamodel.classifications2.MCRCategory;
 import org.mycore.datamodel.classifications2.MCRCategoryDAO;
 import org.mycore.datamodel.classifications2.MCRCategoryDAOFactory;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
 import org.mycore.datamodel.classifications2.MCRLabel;
+import org.mycore.datamodel.classifications2.impl.MCRCategoryImpl;
 import org.mycore.datamodel.classifications2.model.MCRClass;
 import org.mycore.datamodel.classifications2.model.MCRClassCategory;
 import org.mycore.datamodel.classifications2.model.MCRClassURL;
 import org.mycore.frontend.jersey.MCRCacheControl;
 import org.mycore.restapi.annotations.MCRRequireTransaction;
 import org.mycore.restapi.converter.MCRDetailLevel;
+import org.mycore.solr.MCRSolrClientFactory;
+import org.mycore.solr.MCRSolrUtils;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
@@ -119,8 +135,9 @@ public class MCRRestClassifications {
         responses = @ApiResponse(
             content = @Content(schema = @Schema(implementation = MCRClass.class))),
         tags = MCRRestUtils.TAG_MYCORE_CLASSIFICATION)
-    public Response getClassification(@PathParam(PARAM_CLASSID) String classId) {
-        return getClassification(classId, dao -> dao.getCategory(MCRCategoryID.rootID(classId), -1));
+    public Response getClassification(@PathParam(PARAM_CLASSID) String classId
+    , @QueryParam("filter") @DefaultValue("") String filter) {
+        return getClassification(classId, dao -> dao.getCategory(MCRCategoryID.rootID(classId), -1), filter);
     }
 
     @GET
@@ -139,8 +156,7 @@ public class MCRRestClassifications {
         tags = MCRRestUtils.TAG_MYCORE_CLASSIFICATION)
 
     public Response getClassification(@PathParam(PARAM_CLASSID) String classId,
-        @PathParam(PARAM_CATEGID) String categId) {
-
+        @PathParam(PARAM_CATEGID) String categId, @QueryParam("filter") @DefaultValue("") String filter) {
         MCRDetailLevel detailLevel = request.getAcceptableMediaTypes()
             .stream()
             .flatMap(m -> m.getParameters().entrySet().stream()
@@ -152,16 +168,17 @@ public class MCRRestClassifications {
         MCRCategoryID categoryID = new MCRCategoryID(classId, categId);
         switch (detailLevel) {
             case detailed:
-                return getClassification(classId, dao -> dao.getRootCategory(categoryID, -1));
+                return getClassification(classId, dao -> dao.getRootCategory(categoryID, -1), filter);
             case summary:
-                return getClassification(classId, dao -> dao.getCategory(categoryID, 0));
+                return getClassification(classId, dao -> dao.getCategory(categoryID, 0), filter);
             case normal: //default case
             default:
-                return getClassification(classId, dao -> dao.getRootCategory(categoryID, 0));
+                return getClassification(classId, dao -> dao.getRootCategory(categoryID, 0), filter);
         }
     }
 
-    private Response getClassification(String classId, Function<MCRCategoryDAO, MCRCategory> categorySupplier) {
+    private Response getClassification(String classId, Function<MCRCategoryDAO, MCRCategory> categorySupplier, String filter) {
+        // return Response.ok().entity(filter).build();
         MCRCategoryDAO categoryDAO = MCRCategoryDAOFactory.getInstance();
         Date lastModified = getLastModifiedDate(classId, categoryDAO);
         Optional<Response> cachedResponse = MCRRestUtils.getCachedResponse(request.getRequest(), lastModified);
@@ -175,11 +192,98 @@ public class MCRRestClassifications {
                 .withMessage("Could not find classification or category in " + classId + ".")
                 .toException();
         }
-        return Response.ok()
+
+        switch (filter) {
+            case "nochildren":
+            classification.getChildren().forEach(cat -> cat.getChildren().clear());
+            return Response.ok()
+                .entity(classification.isClassification() ? MCRClass.getClassification(classification)
+                    : MCRClassCategory.getInstance(classification))
+                .lastModified(lastModified)
+                .build();
+        
+            case "noempty":
+                // return Response.status(503).build();
+                ArrayList<MCRCategory> classes = new ArrayList();
+                registerClasses(classification.getChildren(), classes);
+                clearClassChildren(classes, classId);
+                toRemove.forEach(cat -> {
+                    //possibly change how categories are deleted
+                    cat.getParent().getChildren().remove(cat);
+                });
+                
+                // SolrClient solrClient = MCRSolrClientFactory.getMainSolrClient();
+                // List<MCRCategory> categories = classification.getChildren();
+                // List<MCRCategory> toremove = new ArrayList<>();
+                // for (MCRCategory cat : categories) {
+                //     SolrQuery solrQquery = new SolrQuery();
+                //     solrQquery.setQuery(
+                //         "category:\"" + MCRSolrUtils.escapeSearchValue(classId + ":" + cat.getId()) + "\"");
+                //     solrQquery.setRows(0);
+                //     try {
+                //         QueryResponse response = solrClient.query(solrQquery);
+                //         SolrDocumentList solrResults = response.getResults();
+                //         if (solrResults.getNumFound() == 0) {
+                //             toremove.add(cat);
+                //         }
+                //     } catch (SolrServerException | IOException err) {
+                //         throw MCRErrorResponse.fromStatus(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode())
+                //         .withErrorCode(MCRErrorCodeConstants.MCROBJECT_INVALID)
+                //         .withMessage("This is broken... " + classId + ".")
+                //         .toException();
+                //     }        
+                // }
+                // categories.removeAll(toremove);
+                return Response.ok()
+                .entity(classification.isClassification() ? MCRClass.getClassification(classification)
+                    : MCRClassCategory.getInstance(classification))
+                .header("toRemove", toRemove)
+                .header("X-MCRID-LIST", mcridList)
+                .lastModified(lastModified)
+                .build();
+
+            default:
+            return Response.ok()
             .entity(classification.isClassification() ? MCRClass.getClassification(classification)
                 : MCRClassCategory.getInstance(classification))
             .lastModified(lastModified)
             .build();
+        }
+    }
+
+    private void registerClasses(List<MCRCategory> children, ArrayList<MCRCategory> list) {
+            children.forEach(child -> {
+                list.add(child);
+                if(child.hasChildren())registerClasses(child.getChildren(), list);
+            });
+    }
+
+    private List<MCRCategory> toRemove = new ArrayList();
+    private List mcridList = new ArrayList();
+
+    private void clearClassChildren(List<MCRCategory> classification, String classId) {
+        SolrClient sclient = MCRSolrClientFactory.getMainSolrClient();
+        classification.forEach(cat -> {
+            SolrQuery squery = new SolrQuery();
+            squery.setQuery("category:\"" + MCRSolrUtils.escapeSearchValue(classId + ":" + cat.getId()) + "\"");
+            squery.setRows(0);
+            mcridList.add(cat.getId());
+            try {
+                QueryResponse sresponse = sclient.query(squery);
+                SolrDocumentList sresults = sresponse.getResults();
+                if (sresults.getNumFound() == 0) {
+                    toRemove.add(cat);
+                } else {
+                    clearClassChildren(cat.getChildren(), classId);
+                }
+            } catch (Exception e) {
+                //TODO: handle exception
+                throw MCRErrorResponse.fromStatus(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode())
+                        .withErrorCode(MCRErrorCodeConstants.MCROBJECT_ID_MISMATCH)
+                        .withMessage("Cannot purge the child from " + classId + ".")
+                        .toException();
+            }
+        });
     }
 
     private static Date getLastModifiedDate(@PathParam(PARAM_CLASSID) String classId, MCRCategoryDAO categoryDAO) {
