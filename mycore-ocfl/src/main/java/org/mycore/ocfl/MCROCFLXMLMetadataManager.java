@@ -39,6 +39,7 @@ import org.mycore.common.MCRSession;
 import org.mycore.common.MCRSessionMgr;
 import org.mycore.common.MCRUsageException;
 import org.mycore.common.MCRUserInformation;
+import org.mycore.common.config.MCRConfiguration2;
 import org.mycore.common.config.annotation.MCRProperty;
 import org.mycore.common.content.MCRContent;
 import org.mycore.common.content.MCRJDOMContent;
@@ -149,15 +150,59 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
         });
     }
 
+    public void purge(MCRObjectID mcrid) {
+        String objName = getObjName(mcrid);
+        if (!exists(mcrid, true)) {
+            throw new MCRUsageException("Cannot purge nonexistent object '" + objName + "'");
+        }
+        OcflRepository repo = getRepository();
+        repo.purgeObject(objName);
+    }
+
+    public void restore(MCRObjectID mcrid, String user) throws MCRPersistenceException, IOException {
+        String objName = getObjName(mcrid);
+        if (!exists(mcrid, true)) {
+            throw new MCRUsageException("Cannot restore nonexistent object '" + objName + "'");
+        }
+        OcflRepository repo = getRepository();
+        VersionInfo headVersion = repo.describeObject(objName).getHeadVersion().getVersionInfo();
+        char versionType = convertMessageToType(headVersion.getMessage());
+        if (versionType != MCROCFLMetadataVersion.DELETED) {
+            throw new MCRUsageException("Cannot undo an delete on a still existing object '" + objName + "'");
+        }
+        // write 1 version back from head to new version, while deleting the DELETED Flag
+        MCRContent xml;
+        //get object infos
+        OcflObjectVersion storeObject = getRepository().getObject(ObjectVersionId.head(objName));
+        String revision = storeObject.getVersionNum().previousVersionNum().toString();
+        OcflObjectVersion targetObject = getRepository().getObject(ObjectVersionId.version(objName, revision));
+        Date lastModified = Date.from(storeObject.getVersionInfo().getCreated().toInstant());
+
+        //read object
+        try (InputStream storedContentStream = targetObject.getFile(buildFilePath(mcrid)).getStream()) {
+            xml = new MCRJDOMContent(new MCRStreamContent(storedContentStream).asXML());
+        } catch (JDOMException | SAXException e) {
+            throw new MCRPersistenceException("Can not parse XML from OCFL-Store", e);
+        }
+
+        //update object
+        update(mcrid, xml, lastModified, user, true);
+    }
+
     @Override
     public void update(MCRObjectID mcrid, MCRContent xml, Date lastModified) throws MCRPersistenceException {
-        update(mcrid, xml, lastModified, null);
+        update(mcrid, xml, lastModified, null, false);
     }
 
     public void update(MCRObjectID mcrid, MCRContent xml, Date lastModified, String user)
         throws MCRPersistenceException {
+        update(mcrid, xml, lastModified, user, false);
+    }
+
+    public void update(MCRObjectID mcrid, MCRContent xml, Date lastModified, String user, Boolean ignore_deleted)
+        throws MCRPersistenceException {
         String objName = getObjName(mcrid);
-        if (!exists(mcrid)) {
+        if (!exists(mcrid, ignore_deleted)) {
             throw new MCRUsageException("Cannot update nonexistent object '" + objName + "'");
         }
         try (InputStream objectAsStream = xml.getInputStream()) {
@@ -178,6 +223,17 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
         return MCR_OBJECT_ID_PREFIX + mcrid;
     }
 
+    // private String layout;
+
+    // @MCRProperty(name = "MCR.OCFL.Layout", required = true, absolute = true)
+    // public void setLayout(String layout) {
+    //     this.layout = layout;
+    // }
+
+    // private String buildFilePath(MCRObjectID objName) {
+    //     if(this.layout.equals("MCRLayout"))return objName + ".xml";
+    //     else return "metadata/" + objName + ".xml";
+    // }
     private String buildFilePath(MCRObjectID objName) {
         return "metadata/" + objName + ".xml";
     }
@@ -219,8 +275,11 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
             throw new MCRUsageException("Object '" + objName + "' could not be found", e);
         }
 
-        if (convertMessageToType(repo.getObject(ObjectVersionId.head(objName)).getVersionInfo()
-            .getMessage()) == MCROCFLMetadataVersion.DELETED) {
+        // maybe use .head(objName) instead to prevent requests of old versions of deleted objects
+        if (convertMessageToType(repo.getObject(ObjectVersionId.version(objName, revision)).getVersionInfo()
+            .getMessage()) == MCROCFLMetadataVersion.DELETED ||
+            convertMessageToType(repo.getObject(ObjectVersionId.head(objName)).getVersionInfo()
+                .getMessage()) == MCROCFLMetadataVersion.DELETED) {
             throw new MCRUsageException("Cannot read already deleted object '" + objName + "'");
         }
 
@@ -233,15 +292,15 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
         }
     }
 
-    private VersionInfo buildVersionInfo(String message, Date versionDate, String user) {
+    VersionInfo buildVersionInfo(String message, Date versionDate, String user) {
         VersionInfo versionInfo = new VersionInfo();
         versionInfo.setMessage(message);
         versionInfo.setCreated((versionDate == null ? new Date() : versionDate).toInstant().atOffset(ZoneOffset.UTC));
         String userID = user != null ? user
             : Optional.ofNullable(MCRSessionMgr.getCurrentSession())
-            .map(MCRSession::getUserInformation)
-            .map(MCRUserInformation::getUserID)
-            .orElse(null);
+                .map(MCRSession::getUserInformation)
+                .map(MCRUserInformation::getUserID)
+                .orElse(null);
         versionInfo.setUser(userID, null);
         return versionInfo;
     }
@@ -280,6 +339,13 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
     public boolean exists(MCRObjectID mcrid) throws MCRPersistenceException {
         String objName = getObjName(mcrid);
         return getRepository().containsObject(objName) && isNotDeleted(objName);
+    }
+
+    public boolean exists(MCRObjectID mcrid, Boolean ignore_deleted) throws MCRPersistenceException {
+        if (!ignore_deleted)
+            return exists(mcrid);
+        String objName = getObjName(mcrid);
+        return getRepository().containsObject(objName);
     }
 
     @Override
