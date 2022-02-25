@@ -25,43 +25,83 @@ import org.mycore.common.events.MCREventHandlerBase;
 import org.mycore.datamodel.classifications2.MCRCategory;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
 import org.mycore.datamodel.classifications2.utils.MCRCategoryTransformer;
-import org.mycore.datamodel.metadata.MCRDerivate;
-import org.mycore.datamodel.metadata.MCRObjectDerivate;
-import org.mycore.datamodel.metadata.MCRObjectID;
 
 /**
- * Event Handler for (Classification) Events
+ * Event Handler for OCFL Events
  * @author Tobias Lenhardt [Hammer1279]
  */
 public class MCROCFLEventHandler extends MCREventHandlerBase {
 
     MCROCFLXMLClassificationManager manager = new MCROCFLXMLClassificationManager();
-    MCROCFLDerivateStoreManager storeManager = new MCROCFLDerivateStoreManager();
+    // MCROCFLDerivateStoreManager storeManager = new MCROCFLDerivateStoreManager();
 
+    // Classification Manager
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void handleClassificationCreated(MCREvent evt, MCRCategory obj) {
         classUpdate(evt, obj);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void handleClassificationUpdated(MCREvent evt, MCRCategory obj) {
         classUpdate(evt, obj);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void handleClassificationDeleted(MCREvent evt, MCRCategory obj) {
         classDelete(evt, obj);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void handleClassificationRepaired(MCREvent evt, MCRCategory obj) {
         classUpdate(evt, obj);
     }
 
 
-    // protected void handleDerivateCreated(MCREvent evt, MCRDerivate der) {
-    //     // TODO implement DerivateStoreManager here
-    // }
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void undoClassificationCreated(MCREvent evt, MCRCategory obj) {
+        classUndo(evt, obj);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void undoClassificationUpdated(MCREvent evt, MCRCategory obj) {
+        classUndo(evt, obj);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void undoClassificationDeleted(MCREvent evt, MCRCategory obj) {
+        classUndo(evt, obj);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void undoClassificationRepaired(MCREvent evt, MCRCategory obj) {
+        classUndo(evt, obj);
+    }
+
 
     private void classUpdate(MCREvent evt, MCRCategory obj) {
         MCRContent xml = new MCRJDOMContent(MCRCategoryTransformer.getMetaDataDocument(obj, false));
@@ -74,13 +114,33 @@ public class MCROCFLEventHandler extends MCREventHandlerBase {
         manager.fileDelete(mcrid, obj, xml, evt);
     }
 
-    private void derivateUpdate(MCREvent evt, MCRDerivate der) {
-        MCRObjectDerivate objectDerivate = der.getDerivate();
-        MCRObjectID derivateID = der.getId();
-        storeManager.derivateUpdate(derivateID, der, objectDerivate, evt);
-    }
-    private void derivateDelete(MCREvent evt, MCRDerivate der) {
-
+    private void classUndo(MCREvent evt, MCRCategory obj) {
+        MCRContent xml = new MCRJDOMContent(MCRCategoryTransformer.getMetaDataDocument(obj, false));
+        MCRCategoryID mcrid = obj.getId();
+        manager.undoAction(mcrid, obj, xml, evt);
     }
 
+    // Derivate Store
+
+    // private void derivateUpdate(MCREvent evt, MCRDerivate der) {
+    //     MCRObjectDerivate objectDerivate = der.getDerivate();
+    //     MCRObjectID derivateID = der.getId();
+    //     storeManager.derivateUpdate(derivateID, der, objectDerivate, evt);
+    // }
+    // private void derivateDelete(MCREvent evt, MCRDerivate der) {
+    //     // TODO Implement Derivate stuff
+    // }
+
+    // // ... more functions ...
+
+    // private void derivateUpdate(MCREvent evt, MCRCategory obj) {
+    //     // TODO Implement Derivate stuff
+    // }
+    // private void derivateDelete(MCREvent evt, MCRCategory obj) {
+    //     // TODO Implement Derivate stuff
+    // }
+
+    // private void derivateUndo(MCREvent evt, MCRCategory obj) {
+    //     // TODO Implement Derivate stuff
+    // }
 }

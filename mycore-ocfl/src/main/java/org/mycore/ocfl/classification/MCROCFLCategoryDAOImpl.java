@@ -27,6 +27,10 @@ import org.mycore.datamodel.classifications2.MCRCategoryID;
 import org.mycore.datamodel.classifications2.impl.MCRCategoryDAOImpl;
 import org.mycore.datamodel.classifications2.impl.MCRCategoryImpl;
 
+/**
+ * Add Event Callers to the Category DAO Implementation
+ * @author Tobias Lenhardt [Hammer1279]
+ */
 public class MCROCFLCategoryDAOImpl extends MCRCategoryDAOImpl {
 
     /**
@@ -35,13 +39,6 @@ public class MCROCFLCategoryDAOImpl extends MCRCategoryDAOImpl {
     @Override
     public MCRCategory addCategory(MCRCategoryID parentID, MCRCategory category, int position) {
         MCRCategory cg = super.addCategory(parentID, category, position);
-        // @Basic
-        // @Column(name = "ClassID", length = ROOT_ID_LENGTH, nullable = false, updatable = false)
-        // private String rootID;
-    
-        // @Basic
-        // @Column(name = "CategID", length = CATEG_ID_LENGTH, updatable = false)
-        // private String id;
         MCREvent evt = new MCREvent(MCREvent.CLASS_TYPE, MCREvent.CREATE_EVENT);
         evt.put("class", cg);
         MCREventManager.instance().handleEvent(evt);

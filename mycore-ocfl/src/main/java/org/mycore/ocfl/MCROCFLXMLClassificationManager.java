@@ -126,7 +126,14 @@ public class MCROCFLXMLClassificationManager {
      */
     public Boolean undoAction(MCRCategoryID mcrId, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
         // TODO unfinished, make something to undo changes if something failed without dataloss
-        return false;
+        switch (eventData.getEventType()) {
+            case MCREvent.DELETE_EVENT:
+                return false;
+
+            default:
+                fileDelete(mcrId, mcrCg, xml, eventData);
+                return true;
+        }
     }
 
     /**
@@ -171,10 +178,10 @@ public class MCROCFLXMLClassificationManager {
         }
     }
 
-
     protected String getName(MCRCategoryID mcrid) {
         return CLASSIFICATION_PREFIX + mcrid.getRootID();
     }
+
     protected String buildFilePath(MCRCategoryID mcrid) {
         return "classification/" + mcrid.toString() + ".xml";
     }
