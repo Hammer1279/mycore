@@ -19,10 +19,12 @@
 package org.mycore.ocfl.layout;
 
 import edu.wisc.library.ocfl.api.exception.OcflExtensionException;
-
 import edu.wisc.library.ocfl.core.extension.OcflExtensionConfig;
 import edu.wisc.library.ocfl.core.extension.storage.layout.OcflStorageLayoutExtension;
 
+/**
+ * @author Tobias Lenhardt [Hammer1279]
+ */
 public class MCRStorageLayoutExtension implements OcflStorageLayoutExtension {
 
     public static final String EXTENSION_NAME = "mycore-storage-layout";
