@@ -33,7 +33,6 @@ import org.mycore.datamodel.classifications2.utils.MCRCategoryTransformer;
 public class MCROCFLEventHandler extends MCREventHandlerBase {
 
     MCROCFLXMLClassificationManager manager = new MCROCFLXMLClassificationManager();
-    // MCROCFLDerivateStoreManager storeManager = new MCROCFLDerivateStoreManager();
 
     // Classification Manager
 
@@ -120,27 +119,4 @@ public class MCROCFLEventHandler extends MCREventHandlerBase {
         manager.undoAction(mcrid, obj, xml, evt);
     }
 
-    // Derivate Store
-
-    // private void derivateUpdate(MCREvent evt, MCRDerivate der) {
-    //     MCRObjectDerivate objectDerivate = der.getDerivate();
-    //     MCRObjectID derivateID = der.getId();
-    //     storeManager.derivateUpdate(derivateID, der, objectDerivate, evt);
-    // }
-    // private void derivateDelete(MCREvent evt, MCRDerivate der) {
-    //     // TODO Implement Derivate stuff
-    // }
-
-    // // ... more functions ...
-
-    // private void derivateUpdate(MCREvent evt, MCRCategory obj) {
-    //     // TODO Implement Derivate stuff
-    // }
-    // private void derivateDelete(MCREvent evt, MCRCategory obj) {
-    //     // TODO Implement Derivate stuff
-    // }
-
-    // private void derivateUndo(MCREvent evt, MCRCategory obj) {
-    //     // TODO Implement Derivate stuff
-    // }
 }
