@@ -18,8 +18,6 @@
 
 package org.mycore.ocfl;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.Date;
@@ -27,20 +25,15 @@ import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.mycore.common.MCRException;
 import org.mycore.common.MCRPersistenceException;
 import org.mycore.common.config.MCRConfiguration2;
-import org.mycore.common.content.MCRContent;
 import org.mycore.common.events.MCREvent;
-import org.mycore.datamodel.classifications2.MCRCategory;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
 import org.mycore.datamodel.metadata.MCRDerivate;
 import org.mycore.datamodel.metadata.MCRObjectDerivate;
 import org.mycore.datamodel.metadata.MCRObjectID;
 
-import edu.wisc.library.ocfl.api.OcflOption;
 import edu.wisc.library.ocfl.api.OcflRepository;
-import edu.wisc.library.ocfl.api.model.ObjectVersionId;
 import edu.wisc.library.ocfl.api.model.VersionInfo;
 
 /**
@@ -74,61 +67,61 @@ public class MCROCFLDerivateStoreManager {
 
         public void derivateUpdate(MCRObjectID derivateID, MCRDerivate derivate, MCRObjectDerivate objectDerivate, MCREvent event) {
             // TODO figure something out how to store this, see MCRMetalIFS, MCRMetalLink, MCRObjectDerivate
-            manager.create(derivateID, xml, lastmodified);
+            // manager.create(derivateID, xml, lastmodified);
         }
 
-        public void fileUpdate(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
+        // public void fileUpdate(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
     
-            String objName = getName(mcrid);
-            String message = eventData.getEventType();
-            Date lastModified = new Date();
-            try {
-                lastModified = new Date(TimeUnit.SECONDS.toMillis(xml.lastModified()));
-            } catch (IOException e1) {
-                LOGGER.throwing(Level.ERROR, new MCRException("Cannot Fetch last Modified"));
-            }
+        //     String objName = getName(mcrid);
+        //     String message = eventData.getEventType();
+        //     Date lastModified = new Date();
+        //     try {
+        //         lastModified = new Date(TimeUnit.SECONDS.toMillis(xml.lastModified()));
+        //     } catch (IOException e1) {
+        //         LOGGER.throwing(Level.ERROR, new MCRException("Cannot Fetch last Modified"));
+        //     }
     
-            try (InputStream objectAsStream = xml.getInputStream()) {
-                VersionInfo versionInfo = buildVersionInfo(message, lastModified);
-                getRepository().updateObject(ObjectVersionId.head(objName), versionInfo, updater -> {
-                    updater.writeFile(objectAsStream, buildFilePath(mcrid), OcflOption.OVERWRITE);
-                });
-            } catch (IOException e) {
-                throw new MCRPersistenceException("Failed to update object '" + objName + "'", e);
-            }
+        //     try (InputStream objectAsStream = xml.getInputStream()) {
+        //         VersionInfo versionInfo = buildVersionInfo(message, lastModified);
+        //         getRepository().updateObject(ObjectVersionId.head(objName), versionInfo, updater -> {
+        //             updater.writeFile(objectAsStream, buildFilePath(mcrid), OcflOption.OVERWRITE);
+        //         });
+        //     } catch (IOException e) {
+        //         throw new MCRPersistenceException("Failed to update object '" + objName + "'", e);
+        //     }
     
-        }
+        // }
     
-        public void fileDelete(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
-            String objName = getName(mcrid);
-            String message = eventData.getEventType();
-            Date lastModified = new Date();
-            try {
-                lastModified = new Date(TimeUnit.SECONDS.toMillis(xml.lastModified()));
-            } catch (IOException e1) {
-                LOGGER.throwing(Level.ERROR, new MCRException("Cannot Fetch last Modified"));
-            }
-            VersionInfo versionInfo = buildVersionInfo(message, lastModified);
-            getRepository().updateObject(ObjectVersionId.head(objName), versionInfo, updater -> {
-                updater.removeFile(buildFilePath(mcrid));
-            });
-        }
+        // public void fileDelete(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
+        //     String objName = getName(mcrid);
+        //     String message = eventData.getEventType();
+        //     Date lastModified = new Date();
+        //     try {
+        //         lastModified = new Date(TimeUnit.SECONDS.toMillis(xml.lastModified()));
+        //     } catch (IOException e1) {
+        //         LOGGER.throwing(Level.ERROR, new MCRException("Cannot Fetch last Modified"));
+        //     }
+        //     VersionInfo versionInfo = buildVersionInfo(message, lastModified);
+        //     getRepository().updateObject(ObjectVersionId.head(objName), versionInfo, updater -> {
+        //         updater.removeFile(buildFilePath(mcrid));
+        //     });
+        // }
     
-        public Boolean undoAction(MCRCategoryID mcrId, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
-            // TODO unfinished, make something to undo changes if something failed without dataloss
-            switch (eventData.getEventType()) {
-                case MCREvent.DELETE_EVENT:
-                    return false;
+        // public Boolean undoAction(MCRCategoryID mcrId, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
+        //     // TODO unfinished, make something to undo changes if something failed without dataloss
+        //     switch (eventData.getEventType()) {
+        //         case MCREvent.DELETE_EVENT:
+        //             return false;
     
-                default:
-                    fileDelete(mcrId, mcrCg, xml, eventData);
-                    return true;
-            }
-        }
+        //         default:
+        //             fileDelete(mcrId, mcrCg, xml, eventData);
+        //             return true;
+        //     }
+        // }
     
-        public MCRContent retrieveContent(MCRCategoryID mcrid) {
-            return retrieveContent(mcrid, null);
-        }
+        // public MCRContent retrieveContent(MCRCategoryID mcrid) {
+        //     return retrieveContent(mcrid, null);
+        // }
     
         // public MCRContent retrieveContent(MCRCategoryID mcrid, String revision) {
         //     String objName = getName(mcrid);
