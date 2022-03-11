@@ -63,7 +63,8 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
 
     protected static final String CLASSIFICATION_PREFIX = "mcrclass:";
 
-    private static final boolean INC_CLSFLD = true;
+    // include the "/classification" directory
+    private static final boolean INC_CLSDIR = false;
 
     // private final String repositoryKey = MCRConfiguration2.getString("MCR.Classification.Manager.Repository")
     //     .orElse("Default");
@@ -141,8 +142,9 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         MCRCategory mcrCg = (MCRCategory) data.get("ctg");
         MCRContent rtXml = (MCRContent) data.get("rtx"); // class
         MCRContent cgXml = (MCRContent) data.get("cgx"); // categ
-        if (mcrCg.isCategory())
+        if (mcrCg.isCategory()) {
             fileUpdate(mcrCg.getRoot().getId(), mcrCg.getRoot(), rtXml, evt);
+        }
         VersionInfo versionInfo = buildVersionInfo(message, lastModified);
         getRepository().commitStagedChanges(getName(mcrid), versionInfo);
     }
@@ -217,35 +219,35 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
             throw new MCRPersistenceException("Can not parse XML from OCFL-Store", e);
         }
 
-        // MCRJDOMContent content = null;
+    // MCRJDOMContent content = null;
 
-        // for (OcflObjectVersionFile file : repo.getObject(vId).getFiles()) {
-        //     LOGGER.debug("\n\n{}\n{}\nMatch? {}-{}\n", objName, file.getPath(), file.getPath().matches(objName + '$'),
-        //         file.getPath().matches(".+" + objName + '$'));
-        //     if (file.getPath().matches(".+" + objName + '$')) {
-        //         try (InputStream fileContentStream = file.getStream()) {
-        //             Document xml = new MCRStreamContent(fileContentStream).asXML();
-        //             if (revision != null) {
-        //                 xml.getRootElement().setAttribute("rev", revision);
-        //             }
-        //             content = new MCRJDOMContent(xml);
-        //         } catch (JDOMException | SAXException | IOException e) {
-        //             throw new MCRPersistenceException("Can not parse XML from OCFL-Store", e);
-        //         }
-        //     }
-        // }
-        // if (content != null) {
-        //     return content;
-        // } else {
-        //     throw new MCRPersistenceException("Can not parse XML from OCFL-Store");
-        // }
+    // for (OcflObjectVersionFile file : repo.getObject(vId).getFiles()) {
+    //     LOGGER.debug("\n\n{}\n{}\nMatch? {}-{}\n", objName, file.getPath(), file.getPath().matches(objName + '$'),
+    //         file.getPath().matches(".+" + objName + '$'));
+    //     if (file.getPath().matches(".+" + objName + '$')) {
+    //         try (InputStream fileContentStream = file.getStream()) {
+    //             Document xml = new MCRStreamContent(fileContentStream).asXML();
+    //             if (revision != null) {
+    //                 xml.getRootElement().setAttribute("rev", revision);
+    //             }
+    //             content = new MCRJDOMContent(xml);
+    //         } catch (JDOMException | SAXException | IOException e) {
+    //             throw new MCRPersistenceException("Can not parse XML from OCFL-Store", e);
+    //         }
+    //     }
+    // }
+    // if (content != null) {
+    //     return content;
+    // } else {
+    //     throw new MCRPersistenceException("Can not parse XML from OCFL-Store");
+    // }
     }
 
     protected String getName(MCRCategoryID mcrid) {
         return CLASSIFICATION_PREFIX + mcrid.getRootID();
     }
 
-    private String rootFolder = INC_CLSFLD ? "classification/" : "";
+    private String rootFolder = INC_CLSDIR ? "classification/" : "";
 
     @Deprecated(forRemoval = false)
     protected String buildFilePath(MCRCategoryID mcrid) {

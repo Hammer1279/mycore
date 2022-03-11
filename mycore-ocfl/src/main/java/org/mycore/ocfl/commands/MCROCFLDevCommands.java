@@ -38,11 +38,11 @@ public class MCROCFLDevCommands {
 
     private static final Logger LOGGER = LogManager.getLogger(MCROCFLDevCommands.class);
 
-    private static final Path EXPORT_DIR = Path.of(MCRConfiguration2.getStringOrThrow("MCR.savedir"),"class-export");
+    private static final Path EXPORT_DIR = Path.of(MCRConfiguration2.getStringOrThrow("MCR.savedir"), "class-export");
 
     private static MCRXMLClassificationManager manager = MCRConfiguration2
-    .getSingleInstanceOf("MCR.Classification.Manager", MCRXMLClassificationManager.class)
-    .orElse(new MCROCFLXMLClassificationManager());
+        .getSingleInstanceOf("MCR.Classification.Manager", MCRXMLClassificationManager.class)
+        .orElse(new MCROCFLXMLClassificationManager());
 
     @MCRCommand(syntax = "load ver classification {0} rev {1}",
         help = "load ver classification {0} rev {1}",
@@ -50,7 +50,8 @@ public class MCROCFLDevCommands {
     public static void readVerClass(String mclass, String rev) throws IOException {
         MCRContent content = manager.retrieveContent(MCRCategoryID.fromString(mclass), rev);
         createDir(EXPORT_DIR);
-        Files.write(Path.of(EXPORT_DIR.toString(), mclass + ".xml"), content.asByteArray(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        Files.write(Path.of(EXPORT_DIR.toString(), mclass + ".xml"), content.asByteArray(), StandardOpenOption.CREATE,
+            StandardOpenOption.TRUNCATE_EXISTING);
         LOGGER.info("Command Run!");
 
     }
@@ -61,13 +62,14 @@ public class MCROCFLDevCommands {
     public static void readVerClass(String mclass) throws IOException {
         MCRContent content = manager.retrieveContent(MCRCategoryID.fromString(mclass));
         createDir(EXPORT_DIR);
-        Files.write(Path.of(EXPORT_DIR.toString(), mclass + ".xml"), content.asByteArray(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        Files.write(Path.of(EXPORT_DIR.toString(), mclass + ".xml"), content.asByteArray(), StandardOpenOption.CREATE,
+            StandardOpenOption.TRUNCATE_EXISTING);
         LOGGER.info("Command Run!");
 
     }
 
     private static void createDir(Path dir) throws IOException {
-        if(Files.notExists(dir)){
+        if (Files.notExists(dir)) {
             Files.createDirectories(dir);
         }
     }
