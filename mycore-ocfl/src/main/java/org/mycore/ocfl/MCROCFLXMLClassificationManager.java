@@ -239,7 +239,6 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         // } else {
         //     throw new MCRPersistenceException("Can not parse XML from OCFL-Store");
         // }
-
     }
 
     protected String getName(MCRCategoryID mcrid) {
