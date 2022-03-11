@@ -194,11 +194,19 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
         return -1;
     }
 
+    protected boolean enQueue = false;
+
     protected void callOnCommit(MCREvent evt) {
-        MCRSessionMgr.getCurrentSession().onCommit(() -> {
-            MCRClassEvent evnt = new MCRClassEvent(EVENT_OBJECT, MCRClassEvent.COMMIT_EVENT);
-            evnt.put("class", evt.get("class"));
-            manager.handleEvent(evnt);
-        });
+        if (!enQueue) {
+            MCRSessionMgr.getCurrentSession().onCommit(() -> {
+                MCRClassEvent evnt = new MCRClassEvent(EVENT_OBJECT, MCRClassEvent.COMMIT_EVENT);
+                evnt.put("class", evt.get("class"));
+                manager.handleEvent(evnt);
+                enQueue = false;
+            });
+            enQueue = true;
+        } else {
+            LOGGER.debug("CallOnCommit already queued, skipping.");
+        }
     }
 }
