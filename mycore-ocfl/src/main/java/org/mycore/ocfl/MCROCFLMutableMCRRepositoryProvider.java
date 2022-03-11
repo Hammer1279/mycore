@@ -43,6 +43,7 @@ public class MCROCFLMutableMCRRepositoryProvider extends MCROCFLMCRRepositoryPro
             Files.createDirectories(repositoryRoot);
         }
         this.repository = new OcflRepositoryBuilder()
+            .prettyPrintJson()
             .defaultLayoutConfig(getExtensionConfig())
             .storage(storage -> storage.fileSystem(repositoryRoot))
             .workDir(workDir).buildMutable();

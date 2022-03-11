@@ -31,13 +31,15 @@ import org.mycore.datamodel.classifications2.MCRCategoryID;
  */
 public interface MCRXMLClassificationManager {
 
+    void fileUpdate(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent xml, MCREvent eventData);
+
     void fileUpdate(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent clXml, MCRContent cgXml,
         MCREvent eventData);
 
     void fileDelete(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent clXml, MCRContent cgXml,
         MCREvent eventData);
 
-    void commitChanges(String mcrid, String message, Date lastModified, MCREvent eventData);
+    void commitChanges(MCREvent evt, String message, Date lastModified);
 
     void undoAction(Map<String, Object> data, MCREvent evt);
 

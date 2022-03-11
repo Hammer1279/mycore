@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.mycore.common.MCRException;
 import org.mycore.common.config.MCRConfiguration2;
 import org.mycore.common.content.MCRContent;
@@ -40,6 +42,8 @@ import org.mycore.datamodel.common.MCRXMLClassificationManager;
  */
 public class MCROCFLEventHandler implements MCREventHandler {
 
+    private static final Logger LOGGER = LogManager.getLogger(MCROCFLEventHandler.class);
+
     protected MCRXMLClassificationManager manager = MCRConfiguration2
         .getSingleInstanceOf("MCR.Classification.Manager", MCRXMLClassificationManager.class)
         .orElse(new MCROCFLXMLClassificationManager());
@@ -53,6 +57,7 @@ public class MCROCFLEventHandler implements MCREventHandler {
             MCRCategory mcrCg = (MCRCategory) data.get("ctg");
             MCRContent clXml = (MCRContent) data.get("rtx");
             MCRContent cgXml = (MCRContent) data.get("cgx");
+            LOGGER.debug("{} handling {} {}", getClass().getName(), mcrid, evt.getEventType());
             switch (evt.getEventType()) {
                 case MCREvent.CREATE_EVENT:
                 case MCREvent.UPDATE_EVENT:
@@ -64,8 +69,11 @@ public class MCROCFLEventHandler implements MCREventHandler {
                 case MCREvent.REPAIR_EVENT:
                     break;
                 case MCRClassEvent.COMMIT_EVENT:
-                    manager.commitChanges(mcrid.toString(), evt.getEventType(), new Date(), evt);
+                    // manager.commitChanges(mcrid.toString(), evt.getEventType(), new Date(), evt);
+                    manager.commitChanges(evt, evt.getEventType(), new Date());
                     break;
+                default:
+                    LOGGER.error("No Method available for {}", evt.getEventType());
             }
         }
     }
@@ -87,11 +95,23 @@ public class MCROCFLEventHandler implements MCREventHandler {
      * <p>mid - MyCoRe ID</p>
      */
     public static final Map<String, Object> getEventData(MCREvent evt) {
+        return getEventData(evt, false);
+    }
+
+    /**
+     * Returns Event Data in form of an Map. This is used to extract the category data from the MyCoRe Event
+     * @param evt MCREvent
+     * @param counter Append Usage Counters (Resource Intensive)
+     * @return Map:
+     * <p>ctg - Category / Classification</p>
+     * <p>rtx - Root Document</p>
+     * <p>cgx - Category Element</p>
+     * <p>mid - MyCoRe ID</p>
+     */
+    public static final Map<String, Object> getEventData(MCREvent evt, boolean counter) {
         MCRCategory cl = (MCRCategory) evt.get("class");
-        MCRContent rtxml = new MCRJDOMContent(MCRCategoryTransformer.getMetaDataDocument(cl.getRoot(), false));
-        // FIXME line above causing crashes together with the commit event,
-        //       working fine in update event, maybe something in the DAO Impl?
-        MCRContent cgxml = new MCRJDOMContent(MCRCategoryTransformer.getMetaDataElement(cl, false));
+        MCRContent rtxml = new MCRJDOMContent(MCRCategoryTransformer.getMetaDataDocument(cl.getRoot(), counter));
+        MCRContent cgxml = new MCRJDOMContent(MCRCategoryTransformer.getMetaDataElement(cl, counter));
         MCRCategoryID mcrid = cl.getId();
         Map<String, Object> rtVal = new HashMap<>();
         rtVal.put("ctg", cl);

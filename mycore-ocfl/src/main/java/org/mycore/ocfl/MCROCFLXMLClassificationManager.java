@@ -42,6 +42,7 @@ import org.mycore.common.content.MCRStreamContent;
 import org.mycore.common.events.MCREvent;
 import org.mycore.datamodel.classifications2.MCRCategory;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
+import org.mycore.datamodel.classifications2.model.MCRClassEvent;
 import org.mycore.datamodel.common.MCRXMLClassificationManager;
 import org.xml.sax.SAXException;
 
@@ -62,6 +63,8 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
 
     protected static final String CLASSIFICATION_PREFIX = "mcrclass:";
 
+    private static final boolean INC_CLSFLD = true;
+
     // private final String repositoryKey = MCRConfiguration2.getString("MCR.Classification.Manager.Repository")
     //     .orElse("Default");
 
@@ -72,6 +75,7 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         Map.entry(MCREvent.CREATE_EVENT, MCROCFLMetadataVersion.CREATED),
         Map.entry(MCREvent.UPDATE_EVENT, MCROCFLMetadataVersion.UPDATED),
         Map.entry(MCREvent.DELETE_EVENT, MCROCFLMetadataVersion.DELETED),
+        Map.entry(MCRClassEvent.COMMIT_EVENT, 'G'),
         Map.entry(MCREvent.REPAIR_EVENT, MCROCFLMetadataVersion.REPAIRED)));
 
     protected static char convertMessageToType(String message) throws MCRPersistenceException {
@@ -83,6 +87,10 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
 
     protected MutableOcflRepository getRepository() {
         return (MutableOcflRepository) MCROCFLRepositoryProvider.getRepository(repositoryKey);
+    }
+
+    public void fileUpdate(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
+        fileUpdate(mcrid, mcrCg, xml, xml, eventData);
     }
 
     public void fileUpdate(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent clXml, MCRContent cgXml,
@@ -100,8 +108,8 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
 
         try (InputStream objectAsStream = xml.getInputStream()) {
             VersionInfo versionInfo = buildVersionInfo(message, lastModified);
-            // getRepository().stageChanges(ObjectVersionId.head(objName), versionInfo, updater -> {
-            getRepository().updateObject(ObjectVersionId.head(objName), versionInfo, updater -> {
+            getRepository().stageChanges(ObjectVersionId.head(objName), versionInfo, updater -> {
+                // getRepository().updateObject(ObjectVersionId.head(objName), versionInfo, updater -> {
                 updater.writeFile(objectAsStream, buildFilePath(mcrCg), OcflOption.OVERWRITE);
             });
         } catch (IOException e) {
@@ -121,19 +129,22 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
             LOGGER.throwing(Level.ERROR, new MCRException("Cannot Fetch last Modified"));
         }
         VersionInfo versionInfo = buildVersionInfo(message, lastModified);
-        // getRepository().stageChanges(ObjectVersionId.head(objName), versionInfo, updater -> {
-        getRepository().updateObject(ObjectVersionId.head(objName), versionInfo, updater -> {
+        getRepository().stageChanges(ObjectVersionId.head(objName), versionInfo, updater -> {
+            // getRepository().updateObject(ObjectVersionId.head(objName), versionInfo, updater -> {
             updater.removeFile(buildFilePath(mcrCg));
         });
     }
 
-    public void commitChanges(String mcrid, String message, Date lastModified, MCREvent evt) {
-        // FIXME this somehow causes null pointer inside the data thing, please investigate, see OCFLEventHandler
-        Map<String, Object> data = MCROCFLEventHandler.getEventData(evt);
-        fileUpdate((MCRCategoryID) data.get("mid"), (MCRCategory) data.get("ctg"), (MCRContent) data.get("rtx"),
-            (MCRContent) data.get("cgx"), evt);
+    public void commitChanges(MCREvent evt, String message, Date lastModified) {
+        Map<String, Object> data = MCROCFLEventHandler.getEventData(evt, true);
+        MCRCategoryID mcrid = (MCRCategoryID) data.get("mid");
+        MCRCategory mcrCg = (MCRCategory) data.get("ctg");
+        MCRContent rtXml = (MCRContent) data.get("rtx"); // class
+        MCRContent cgXml = (MCRContent) data.get("cgx"); // categ
+        if (mcrCg.isCategory())
+            fileUpdate(mcrCg.getRoot().getId(), mcrCg.getRoot(), rtXml, evt);
         VersionInfo versionInfo = buildVersionInfo(message, lastModified);
-        getRepository().commitStagedChanges(mcrid, versionInfo);
+        getRepository().commitStagedChanges(getName(mcrid), versionInfo);
     }
 
     public void undoAction(Map<String, Object> data, MCREvent evt) {
@@ -205,23 +216,49 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         } catch (JDOMException | SAXException | IOException e) {
             throw new MCRPersistenceException("Can not parse XML from OCFL-Store", e);
         }
+
+        // MCRJDOMContent content = null;
+
+        // for (OcflObjectVersionFile file : repo.getObject(vId).getFiles()) {
+        //     LOGGER.debug("\n\n{}\n{}\nMatch? {}-{}\n", objName, file.getPath(), file.getPath().matches(objName + '$'),
+        //         file.getPath().matches(".+" + objName + '$'));
+        //     if (file.getPath().matches(".+" + objName + '$')) {
+        //         try (InputStream fileContentStream = file.getStream()) {
+        //             Document xml = new MCRStreamContent(fileContentStream).asXML();
+        //             if (revision != null) {
+        //                 xml.getRootElement().setAttribute("rev", revision);
+        //             }
+        //             content = new MCRJDOMContent(xml);
+        //         } catch (JDOMException | SAXException | IOException e) {
+        //             throw new MCRPersistenceException("Can not parse XML from OCFL-Store", e);
+        //         }
+        //     }
+        // }
+        // if (content != null) {
+        //     return content;
+        // } else {
+        //     throw new MCRPersistenceException("Can not parse XML from OCFL-Store");
+        // }
+
     }
 
     protected String getName(MCRCategoryID mcrid) {
         return CLASSIFICATION_PREFIX + mcrid.getRootID();
     }
 
-    @Deprecated(forRemoval = true)
+    private String rootFolder = INC_CLSFLD ? "classification/" : "";
+
+    @Deprecated(forRemoval = false)
     protected String buildFilePath(MCRCategoryID mcrid) {
         if (mcrid.isRootID()) {
-            return "classification/" + mcrid.toString() + ".xml";
+            return rootFolder + mcrid.toString() + ".xml";
         } else {
-            return "classification/" + mcrid.getRootID() + '/' + mcrid.toString() + ".xml";
+            return rootFolder + mcrid.getRootID() + '/' + mcrid.toString() + ".xml";
         }
     }
 
     protected String buildFilePath(MCRCategory mcrCg) {
-        StringBuilder builder = new StringBuilder("classification/");
+        StringBuilder builder = new StringBuilder(rootFolder);
         if (mcrCg.isClassification()) {
             builder.append(mcrCg.getId()).append(".xml");
         } else if (mcrCg.isCategory()) {
