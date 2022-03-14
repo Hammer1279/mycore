@@ -34,10 +34,11 @@ import org.mycore.datamodel.classifications2.MCRCategoryID;
 import org.mycore.datamodel.classifications2.utils.MCRCategoryTransformer;
 
 /**
- * Event Handler for OCFL Events
+ * Event Handler for OCFL Events to save Classification as native XML
  * @author Tobias Lenhardt [Hammer1279]
  */
 @SuppressWarnings(value = "PMD")
+@Deprecated(forRemoval = true)
 public class MCROCFLXMLSaveEventHandler extends MCREventHandlerBase {
 
     private static final String BASE_PATH = MCRConfiguration2.getStringOrThrow("MCR.datadir");

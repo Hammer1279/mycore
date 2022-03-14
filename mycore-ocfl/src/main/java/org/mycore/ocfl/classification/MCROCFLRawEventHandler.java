@@ -24,6 +24,7 @@ import org.mycore.common.MCRException;
 import org.mycore.common.events.MCREvent;
 import org.mycore.common.events.MCREventHandler;
 
+@Deprecated(forRemoval = true)
 public class MCROCFLRawEventHandler implements MCREventHandler {
 
     private static final Logger LOGGER = LogManager.getLogger(MCROCFLRawEventHandler.class);

@@ -18,16 +18,26 @@
 
 package org.mycore.ocfl.commands;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.mycore.common.config.MCRConfiguration2;
 import org.mycore.common.content.MCRContent;
+import org.mycore.common.content.MCRJDOMContent;
+import org.mycore.common.events.MCREvent;
+import org.mycore.datamodel.classifications2.MCRCategory;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
+import org.mycore.datamodel.classifications2.impl.MCRCategoryDAOImpl;
+import org.mycore.datamodel.classifications2.model.MCRClassEvent;
+import org.mycore.datamodel.classifications2.utils.MCRCategoryTransformer;
 import org.mycore.datamodel.common.MCRXMLClassificationManager;
 import org.mycore.frontend.cli.annotation.MCRCommand;
 import org.mycore.frontend.cli.annotation.MCRCommandGroup;
@@ -72,5 +82,32 @@ public class MCROCFLDevCommands {
         if (Files.notExists(dir)) {
             Files.createDirectories(dir);
         }
+    }
+
+    @MCRCommand(syntax = "rebuild ocfl class store")
+    public static void rebuildClassStore() {
+        String repositoryKey = MCRConfiguration2.getStringOrThrow("MCR.Classification.Manager.Repository");
+        String ocflRoot = MCRConfiguration2
+            .getStringOrThrow("MCR.OCFL.Repository." + repositoryKey + ".RepositoryRoot");
+        Path classDir = Path.of(ocflRoot, "mcrclass");
+        try (Stream<Path> walker = Files.walk(classDir)) {
+            walker.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+        } catch (Exception e) {
+            //TODO: handle exception
+        }
+        List<MCRCategoryID> list = new MCRCategoryDAOImpl().getRootCategoryIDs();
+        list.forEach(cId -> {
+            MCREvent evt = new MCREvent(MCREvent.CLASS_TYPE, MCREvent.CREATE_EVENT);
+            MCRCategory category = new MCRCategoryDAOImpl().getCategory(cId, -1); // try this on the Event Handler Data Retrieve
+            evt.put("class", category);
+            manager.fileUpdate(category.getId(), category,
+                new MCRJDOMContent(MCRCategoryTransformer.getMetaDataDocument(category, true)), evt);
+        });
+        list.forEach(category -> {
+            MCREvent evt = new MCREvent(MCREvent.CLASS_TYPE, MCRClassEvent.COMMIT_EVENT);
+            evt.put("class", category);
+            manager.commitChanges(evt, evt.getEventType(), null);
+        });
+        LOGGER.info("Updated {} Objects in OCFL Store", list.size());
     }
 }

@@ -52,12 +52,17 @@ public class MCROCFLEventHandler implements MCREventHandler {
     @SuppressWarnings(value = "PMD.SwitchStmtsShouldHaveDefault")
     public void doHandleEvent(MCREvent evt) throws MCRException {
         if (Objects.equals(evt.getObjectType(), MCREvent.CLASS_TYPE)) {
-            Map<String, Object> data = getEventData(evt);
+            Map<String, Object> data = getEventData(evt, true);
             MCRCategoryID mcrid = (MCRCategoryID) data.get("mid");
             MCRCategory mcrCg = (MCRCategory) data.get("ctg");
             MCRContent clXml = (MCRContent) data.get("rtx");
             MCRContent cgXml = (MCRContent) data.get("cgx");
             LOGGER.debug("{} handling {} {}", getClass().getName(), mcrid, evt.getEventType());
+            LOGGER.debug("\n\nCLASS:\nID: {}\nRootID: {}\n", ((MCRCategory) evt.get("class")).getId(),
+                ((MCRCategory) evt.get("class")).getRoot().getId());
+            LOGGER.debug("\n\nID-{} is:\nRoot: {}\nRootID: {}\n", mcrid.getID(), mcrid.isRootID(), mcrid.getRootID());
+            LOGGER.debug("\n\nCG-{} is:\nClass: {}\nCateg: {}\n", mcrCg.getId(), mcrCg.isClassification(),
+                mcrCg.isCategory());
             switch (evt.getEventType()) {
                 case MCREvent.CREATE_EVENT:
                 case MCREvent.UPDATE_EVENT:
@@ -81,6 +86,8 @@ public class MCROCFLEventHandler implements MCREventHandler {
     @Override
     public void undoHandleEvent(MCREvent evt) throws MCRException {
         if (Objects.equals(evt.getObjectType(), MCREvent.CLASS_TYPE)) {
+            LOGGER.debug("{} handling {} {}", getClass().getName(), ((MCRCategory) evt.get("class")).getId(),
+                evt.getEventType());
             manager.undoAction(getEventData(evt), evt);
         }
     }

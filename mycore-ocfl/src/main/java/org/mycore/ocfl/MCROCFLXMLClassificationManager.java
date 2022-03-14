@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.Level;
@@ -76,7 +77,7 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         Map.entry(MCREvent.CREATE_EVENT, MCROCFLMetadataVersion.CREATED),
         Map.entry(MCREvent.UPDATE_EVENT, MCROCFLMetadataVersion.UPDATED),
         Map.entry(MCREvent.DELETE_EVENT, MCROCFLMetadataVersion.DELETED),
-        Map.entry(MCRClassEvent.COMMIT_EVENT, 'G'),
+        Map.entry(MCRClassEvent.COMMIT_EVENT, 'G'), // gommit
         Map.entry(MCREvent.REPAIR_EVENT, MCROCFLMetadataVersion.REPAIRED)));
 
     protected static char convertMessageToType(String message) throws MCRPersistenceException {
@@ -96,6 +97,13 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
 
     public void fileUpdate(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent clXml, MCRContent cgXml,
         MCREvent eventData) {
+
+        try {
+            LOGGER.debug("\n\n{}\n\n{}\n\n", clXml.asString(), cgXml.asString());
+        } catch (IOException e2) {
+            // TODO Auto-generated catch block
+            e2.printStackTrace();
+        }
 
         String objName = getName(mcrid);
         String message = eventData.getEventType();
@@ -117,6 +125,10 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
             throw new MCRPersistenceException("Failed to update object '" + objName + "'", e);
         }
 
+    }
+
+    public void fileDelete(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
+        fileDelete(mcrid, mcrCg, xml, xml, eventData);
     }
 
     public void fileDelete(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent clXml, MCRContent cgXml,
@@ -149,11 +161,25 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         getRepository().commitStagedChanges(getName(mcrid), versionInfo);
     }
 
-    public void undoAction(Map<String, Object> data, MCREvent evt) {
+    public void dropChanges(MCREvent evt, Map<String, Object> data) {
         MCRCategoryID mcrid = (MCRCategoryID) data.get("mid");
-        MCRCategory mcrCg = (MCRCategory) data.get("ctg");
-        MCRContent cgXml = (MCRContent) data.get("xml");
-        undoAction(mcrid, mcrCg, cgXml, evt);
+        if (getRepository().hasStagedChanges(getName(mcrid))) {
+            getRepository().purgeStagedChanges(getName(mcrid));
+            LOGGER.debug("Dropped changes of {}", getName(mcrid));
+        } else {
+            LOGGER.debug("No changes to Drop for {}", getName(mcrid));
+        }
+    }
+
+    public void undoAction(Map<String, Object> data, MCREvent evt) {
+        if (!Objects.equals(evt.getEventType(), MCRClassEvent.COMMIT_EVENT)) {
+            dropChanges(evt, data);
+        } else {
+            MCRCategoryID mcrid = (MCRCategoryID) data.get("mid");
+            MCRCategory mcrCg = (MCRCategory) data.get("ctg");
+            MCRContent cgXml = (MCRContent) data.get("xml");
+            undoAction(mcrid, mcrCg, cgXml, evt);
+        }
     }
 
     /**
@@ -163,7 +189,9 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
      * @param xml MCRContent
      * @param eventData MCREvent
      * @return Bool - if undo was successful
+     * @deprecated use {@link #undoAction(Map, MCREvent)} with {@link MCROCFLEventHandler#getEventData(MCREvent, boolean)}
      */
+    @Deprecated(forRemoval = false)
     public Boolean undoAction(MCRCategoryID mcrId, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
         // TODO unfinished, make something to undo changes if something failed without dataloss
         switch (eventData.getEventType()) {
@@ -173,8 +201,8 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
                 return false;
 
             default:
-                fileDelete(mcrId, mcrCg, xml, xml, eventData);
-                return true;
+                // fileDelete(mcrId, mcrCg, xml, xml, eventData);
+                return false;
         }
     }
 
@@ -219,28 +247,28 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
             throw new MCRPersistenceException("Can not parse XML from OCFL-Store", e);
         }
 
-    // MCRJDOMContent content = null;
+        // MCRJDOMContent content = null;
 
-    // for (OcflObjectVersionFile file : repo.getObject(vId).getFiles()) {
-    //     LOGGER.debug("\n\n{}\n{}\nMatch? {}-{}\n", objName, file.getPath(), file.getPath().matches(objName + '$'),
-    //         file.getPath().matches(".+" + objName + '$'));
-    //     if (file.getPath().matches(".+" + objName + '$')) {
-    //         try (InputStream fileContentStream = file.getStream()) {
-    //             Document xml = new MCRStreamContent(fileContentStream).asXML();
-    //             if (revision != null) {
-    //                 xml.getRootElement().setAttribute("rev", revision);
-    //             }
-    //             content = new MCRJDOMContent(xml);
-    //         } catch (JDOMException | SAXException | IOException e) {
-    //             throw new MCRPersistenceException("Can not parse XML from OCFL-Store", e);
-    //         }
-    //     }
-    // }
-    // if (content != null) {
-    //     return content;
-    // } else {
-    //     throw new MCRPersistenceException("Can not parse XML from OCFL-Store");
-    // }
+        // for (OcflObjectVersionFile file : repo.getObject(vId).getFiles()) {
+        //     LOGGER.debug("\n\n{}\n{}\nMatch? {}-{}\n", objName, file.getPath(), file.getPath().matches(objName + '$'),
+        //         file.getPath().matches(".+" + objName + '$'));
+        //     if (file.getPath().matches(".+" + objName + '$')) {
+        //         try (InputStream fileContentStream = file.getStream()) {
+        //             Document xml = new MCRStreamContent(fileContentStream).asXML();
+        //             if (revision != null) {
+        //                 xml.getRootElement().setAttribute("rev", revision);
+        //             }
+        //             content = new MCRJDOMContent(xml);
+        //         } catch (JDOMException | SAXException | IOException e) {
+        //             throw new MCRPersistenceException("Can not parse XML from OCFL-Store", e);
+        //         }
+        //     }
+        // }
+        // if (content != null) {
+        //     return content;
+        // } else {
+        //     throw new MCRPersistenceException("Can not parse XML from OCFL-Store");
+        // }
     }
 
     protected String getName(MCRCategoryID mcrid) {

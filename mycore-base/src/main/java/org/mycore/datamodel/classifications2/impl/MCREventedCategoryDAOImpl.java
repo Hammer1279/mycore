@@ -36,7 +36,7 @@ import org.mycore.datamodel.classifications2.MCRLabel;
 import org.mycore.datamodel.classifications2.model.MCRClassEvent;
 
 /**
- * 
+ * Category DAO Implementation with Event Handlers
  * @author Tobias Lenhardt [Hammer1279]
  */
 public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
@@ -74,9 +74,9 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
     public void deleteCategory(MCRCategoryID id) {
         MCREvent evt = new MCREvent(MCREvent.CLASS_TYPE, MCREvent.DELETE_EVENT);
         evt.put("class", super.getCategory(id, -1));
+        super.deleteCategory(id);
         manager.handleEvent(evt, MCREventManager.BACKWARD);
         callOnCommit(evt);
-        super.deleteCategory(id);
     }
 
     /*

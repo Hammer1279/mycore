@@ -30,6 +30,7 @@ import org.mycore.datamodel.classifications2.utils.MCRCategoryTransformer;
  * Event Handler for OCFL Events
  * @author Tobias Lenhardt [Hammer1279]
  */
+@Deprecated(forRemoval = false)
 public class MCROCFLBasedEventHandler extends MCREventHandlerBase {
 
     MCROCFLXMLClassificationManager manager = new MCROCFLXMLClassificationManager();
