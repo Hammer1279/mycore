@@ -41,6 +41,7 @@ import org.mycore.datamodel.classifications2.utils.MCRCategoryTransformer;
 import org.mycore.datamodel.common.MCRXMLClassificationManager;
 import org.mycore.frontend.cli.annotation.MCRCommand;
 import org.mycore.frontend.cli.annotation.MCRCommandGroup;
+import org.mycore.ocfl.MCROCFLEventHandler;
 import org.mycore.ocfl.MCROCFLXMLClassificationManager;
 
 @MCRCommandGroup(name = "OCFL Development Commands")
@@ -96,18 +97,27 @@ public class MCROCFLDevCommands {
             //TODO: handle exception
         }
         List<MCRCategoryID> list = new MCRCategoryDAOImpl().getRootCategoryIDs();
-        list.forEach(cId -> {
-            MCREvent evt = new MCREvent(MCREvent.CLASS_TYPE, MCREvent.CREATE_EVENT);
-            MCRCategory category = new MCRCategoryDAOImpl().getCategory(cId, -1); // try this on the Event Handler Data Retrieve
-            evt.put("class", category);
-            manager.fileUpdate(category.getId(), category,
-                new MCRJDOMContent(MCRCategoryTransformer.getMetaDataDocument(category, true)), evt);
-        });
-        list.forEach(category -> {
-            MCREvent evt = new MCREvent(MCREvent.CLASS_TYPE, MCRClassEvent.COMMIT_EVENT);
-            evt.put("class", category);
-            manager.commitChanges(evt, evt.getEventType(), null);
-        });
-        LOGGER.info("Updated {} Objects in OCFL Store", list.size());
+        try {
+            list.forEach(cId -> {
+                MCREvent evt = new MCREvent(MCREvent.CLASS_TYPE, MCREvent.CREATE_EVENT);
+                MCRCategory category = new MCRCategoryDAOImpl().getCategory(cId, -1); // try this on the Event Handler Data Retrieve
+                evt.put("class", category);
+                manager.fileUpdate(category.getId(), category,
+                    new MCRJDOMContent(MCRCategoryTransformer.getMetaDataDocument(category, true)), evt);
+            });
+            list.forEach(category -> {
+                MCREvent evt = new MCREvent(MCREvent.CLASS_TYPE, MCRClassEvent.COMMIT_EVENT);
+                evt.put("class", category);
+                manager.commitChanges(evt, evt.getEventType(), null);
+            });
+            LOGGER.info("Updated {} Objects in OCFL Store", list.size());
+        } catch (Exception e) {
+            list.forEach(category -> {
+                MCREvent evt = new MCREvent(MCREvent.CLASS_TYPE, MCRClassEvent.COMMIT_EVENT);
+                evt.put("class", category);
+                manager.undoAction(MCROCFLEventHandler.getEventData(evt), evt);
+            });
+            LOGGER.error("Error Updating Class Storage:", e);
+        }
     }
 }
