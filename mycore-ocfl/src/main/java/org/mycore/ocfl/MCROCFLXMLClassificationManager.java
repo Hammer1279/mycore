@@ -148,16 +148,17 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         });
     }
 
-    public void commitChanges(MCREvent evt, String message, Date lastModified) {
+    public void commitChanges(MCREvent evt, Date lastModified) {
         Map<String, Object> data = MCROCFLEventHandler.getEventData(evt, true);
         MCRCategoryID mcrid = (MCRCategoryID) data.get("mid");
         MCRCategory mcrCg = (MCRCategory) data.get("ctg");
         MCRContent rtXml = (MCRContent) data.get("rtx"); // class
         MCRContent cgXml = (MCRContent) data.get("cgx"); // categ
+        MCREvent event = (MCREvent)evt.get("event");
         if (mcrCg.isCategory()) {
             fileUpdate(mcrCg.getRoot().getId(), mcrCg.getRoot(), rtXml, evt);
         }
-        VersionInfo versionInfo = buildVersionInfo(message, lastModified);
+        VersionInfo versionInfo = buildVersionInfo(event.getEventType(), lastModified);
         getRepository().commitStagedChanges(getName(mcrid), versionInfo);
     }
 

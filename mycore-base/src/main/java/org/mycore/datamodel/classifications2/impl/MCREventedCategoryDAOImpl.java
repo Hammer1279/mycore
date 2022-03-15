@@ -201,6 +201,7 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
             MCRSessionMgr.getCurrentSession().onCommit(() -> {
                 MCRClassEvent evnt = new MCRClassEvent(EVENT_OBJECT, MCRClassEvent.COMMIT_EVENT);
                 evnt.put("class", evt.get("class"));
+                evnt.put("event", evt);
                 manager.handleEvent(evnt);
                 enQueue = false;
             });

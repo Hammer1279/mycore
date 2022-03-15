@@ -32,6 +32,7 @@ import org.mycore.common.content.MCRJDOMContent;
 import org.mycore.common.events.MCREvent;
 import org.mycore.common.events.MCREventHandler;
 import org.mycore.datamodel.classifications2.MCRCategory;
+import org.mycore.datamodel.classifications2.MCRCategoryDAOFactory;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
 import org.mycore.datamodel.classifications2.model.MCRClassEvent;
 import org.mycore.datamodel.classifications2.utils.MCRCategoryTransformer;
@@ -75,7 +76,7 @@ public class MCROCFLEventHandler implements MCREventHandler {
                     break;
                 case MCRClassEvent.COMMIT_EVENT:
                     // manager.commitChanges(mcrid.toString(), evt.getEventType(), new Date(), evt);
-                    manager.commitChanges(evt, evt.getEventType(), new Date());
+                    manager.commitChanges(evt, new Date());
                     break;
                 default:
                     LOGGER.error("No Method available for {}", evt.getEventType());
@@ -117,7 +118,8 @@ public class MCROCFLEventHandler implements MCREventHandler {
      */
     public static final Map<String, Object> getEventData(MCREvent evt, boolean counter) {
         MCRCategory cl = (MCRCategory) evt.get("class");
-        MCRContent rtxml = new MCRJDOMContent(MCRCategoryTransformer.getMetaDataDocument(cl.getRoot(), counter));
+        MCRContent rtxml = new MCRJDOMContent(MCRCategoryTransformer
+            .getMetaDataDocument(MCRCategoryDAOFactory.getInstance().getCategory(cl.getRoot().getId(), -1), counter));
         MCRContent cgxml = new MCRJDOMContent(MCRCategoryTransformer.getMetaDataElement(cl, counter));
         MCRCategoryID mcrid = cl.getId();
         Map<String, Object> rtVal = new HashMap<>();

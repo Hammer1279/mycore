@@ -27,6 +27,7 @@ import org.mycore.datamodel.classifications2.MCRCategory;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
 
 /**
+ * Interface for Native Drive Storage Manager for MyCoRe Classifications
  * @author Tobias Lenhardt [Hammer1279]
  */
 public interface MCRXMLClassificationManager {
@@ -41,7 +42,7 @@ public interface MCRXMLClassificationManager {
     void fileDelete(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent clXml, MCRContent cgXml,
         MCREvent eventData);
 
-    void commitChanges(MCREvent evt, String message, Date lastModified);
+    void commitChanges(MCREvent evt, Date lastModified);
 
     void undoAction(Map<String, Object> data, MCREvent evt);
 

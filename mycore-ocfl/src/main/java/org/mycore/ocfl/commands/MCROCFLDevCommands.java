@@ -44,6 +44,10 @@ import org.mycore.frontend.cli.annotation.MCRCommandGroup;
 import org.mycore.ocfl.MCROCFLEventHandler;
 import org.mycore.ocfl.MCROCFLXMLClassificationManager;
 
+/**
+ * Development Commands for the OCFL Module
+ * @author Tobias Lenhardt [Hammer1279]
+ */
 @MCRCommandGroup(name = "OCFL Development Commands")
 public class MCROCFLDevCommands {
 
@@ -55,8 +59,8 @@ public class MCROCFLDevCommands {
         .getSingleInstanceOf("MCR.Classification.Manager", MCRXMLClassificationManager.class)
         .orElse(new MCROCFLXMLClassificationManager());
 
-    @MCRCommand(syntax = "load ver classification {0} rev {1}",
-        help = "load ver classification {0} rev {1}",
+    @MCRCommand(syntax = "load ver class {0} rev {1}",
+        help = "load ver class {0} rev {1}",
         order = 2)
     public static void readVerClass(String mclass, String rev) throws IOException {
         MCRContent content = manager.retrieveContent(MCRCategoryID.fromString(mclass), rev);
@@ -67,8 +71,8 @@ public class MCROCFLDevCommands {
 
     }
 
-    @MCRCommand(syntax = "load ver classification {0}",
-        help = "load ver classification {0}",
+    @MCRCommand(syntax = "load ver class {0}",
+        help = "load ver class {0}",
         order = 4)
     public static void readVerClass(String mclass) throws IOException {
         MCRContent content = manager.retrieveContent(MCRCategoryID.fromString(mclass));
@@ -85,9 +89,19 @@ public class MCROCFLDevCommands {
         }
     }
 
-    @MCRCommand(syntax = "rebuild ocfl class store")
+    @MCRCommand(syntax = "rebuild ocfl class store",
+        help = "Clear the OCFL Store Classifications and reload them from the Database\nTHIS WILL DELETE ALL DATA",
+        order = 2)
     public static void rebuildClassStore() {
         String repositoryKey = MCRConfiguration2.getStringOrThrow("MCR.Classification.Manager.Repository");
+        rebuildClassStore(repositoryKey);
+    }
+
+    @MCRCommand(syntax = "rebuild ocfl class store {0}",
+        help = "Clear the OCFL Store {0} Classifications and reload them from the Database\nTHIS WILL DELETE ALL DATA",
+        order = 4)
+    public static void rebuildClassStore(String repositoryKey) {
+        // String repositoryKey = MCRConfiguration2.getStringOrThrow("MCR.Classification.Manager.Repository");
         String ocflRoot = MCRConfiguration2
             .getStringOrThrow("MCR.OCFL.Repository." + repositoryKey + ".RepositoryRoot");
         Path classDir = Path.of(ocflRoot, "mcrclass");
@@ -105,15 +119,17 @@ public class MCROCFLDevCommands {
                 manager.fileUpdate(category.getId(), category,
                     new MCRJDOMContent(MCRCategoryTransformer.getMetaDataDocument(category, true)), evt);
             });
-            list.forEach(category -> {
+            list.forEach(cId -> {
                 MCREvent evt = new MCREvent(MCREvent.CLASS_TYPE, MCRClassEvent.COMMIT_EVENT);
+                MCRCategory category = new MCRCategoryDAOImpl().getCategory(cId, 0); // try this on the Event Handler Data Retrieve
                 evt.put("class", category);
-                manager.commitChanges(evt, evt.getEventType(), null);
+                manager.commitChanges(evt, null);
             });
             LOGGER.info("Updated {} Objects in OCFL Store", list.size());
         } catch (Exception e) {
-            list.forEach(category -> {
+            list.forEach(cId -> {
                 MCREvent evt = new MCREvent(MCREvent.CLASS_TYPE, MCRClassEvent.COMMIT_EVENT);
+                MCRCategory category = new MCRCategoryDAOImpl().getCategory(cId, 0); // try this on the Event Handler Data Retrieve
                 evt.put("class", category);
                 manager.undoAction(MCROCFLEventHandler.getEventData(evt), evt);
             });
