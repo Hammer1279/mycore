@@ -23,20 +23,24 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.mycore.common.MCRSession;
+import org.mycore.common.MCRSessionMgr;
+import org.mycore.common.MCRTransactionHelper;
 import org.mycore.common.config.MCRConfiguration2;
 import org.mycore.common.content.MCRContent;
 import org.mycore.common.content.MCRJDOMContent;
 import org.mycore.common.events.MCREvent;
 import org.mycore.datamodel.classifications2.MCRCategory;
+import org.mycore.datamodel.classifications2.MCRCategoryDAOFactory;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
 import org.mycore.datamodel.classifications2.impl.MCRCategoryDAOImpl;
-import org.mycore.datamodel.classifications2.model.MCRClassEvent;
 import org.mycore.datamodel.classifications2.utils.MCRCategoryTransformer;
 import org.mycore.datamodel.common.MCRXMLClassificationManager;
 import org.mycore.frontend.cli.annotation.MCRCommand;
@@ -59,8 +63,8 @@ public class MCROCFLDevCommands {
         .getSingleInstanceOf("MCR.Classification.Manager", MCRXMLClassificationManager.class)
         .orElse(new MCROCFLXMLClassificationManager());
 
-    @MCRCommand(syntax = "load ver class {0} rev {1}",
-        help = "load ver class {0} rev {1}",
+    @MCRCommand(syntax = "export ocfl class {0} rev {1}",
+        help = "export ocfl class {0} rev {1}",
         order = 2)
     public static void readVerClass(String mclass, String rev) throws IOException {
         MCRContent content = manager.retrieveContent(MCRCategoryID.fromString(mclass), rev);
@@ -71,8 +75,8 @@ public class MCROCFLDevCommands {
 
     }
 
-    @MCRCommand(syntax = "load ver class {0}",
-        help = "load ver class {0}",
+    @MCRCommand(syntax = "export ocfl class {0}",
+        help = "export ocfl class {0}",
         order = 4)
     public static void readVerClass(String mclass) throws IOException {
         MCRContent content = manager.retrieveContent(MCRCategoryID.fromString(mclass));
@@ -83,53 +87,65 @@ public class MCROCFLDevCommands {
 
     }
 
+    @MCRCommand(syntax = "export all ocfl classes",
+        help = "export all ocfl classes",
+        order = 2)
+    public static void readAllClass() throws IOException {
+        List<MCRCategoryID> list = MCRCategoryDAOFactory.getInstance().getRootCategoryIDs();
+        for (MCRCategoryID cId : list) {
+            readVerClass(cId.getID());
+        }
+        LOGGER.info("Command Run!");
+    }
+
     private static void createDir(Path dir) throws IOException {
         if (Files.notExists(dir)) {
             Files.createDirectories(dir);
         }
     }
 
+    @SuppressWarnings("unchecked")
     @MCRCommand(syntax = "rebuild ocfl class store",
         help = "Clear the OCFL Store Classifications and reload them from the Database\nTHIS WILL DELETE ALL DATA",
         order = 2)
-    public static void rebuildClassStore() {
+    public static void rebuildClassStore() throws IOException {
         String repositoryKey = MCRConfiguration2.getStringOrThrow("MCR.Classification.Manager.Repository");
-        rebuildClassStore(repositoryKey);
-    }
-
-    @MCRCommand(syntax = "rebuild ocfl class store {0}",
-        help = "Clear the OCFL Store {0} Classifications and reload them from the Database\nTHIS WILL DELETE ALL DATA",
-        order = 4)
-    public static void rebuildClassStore(String repositoryKey) {
-        // String repositoryKey = MCRConfiguration2.getStringOrThrow("MCR.Classification.Manager.Repository");
         String ocflRoot = MCRConfiguration2
             .getStringOrThrow("MCR.OCFL.Repository." + repositoryKey + ".RepositoryRoot");
         Path classDir = Path.of(ocflRoot, "mcrclass");
         try (Stream<Path> walker = Files.walk(classDir)) {
             walker.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
         } catch (Exception e) {
-            //TODO: handle exception
+            throw new IOException(e);
         }
         List<MCRCategoryID> list = new MCRCategoryDAOImpl().getRootCategoryIDs();
         try {
+            String classQueue = "classQueue";
+            MCRSession currentSession = MCRSessionMgr.getCurrentSession();
             list.forEach(cId -> {
                 MCREvent evt = new MCREvent(MCREvent.CLASS_TYPE, MCREvent.CREATE_EVENT);
-                MCRCategory category = new MCRCategoryDAOImpl().getCategory(cId, -1); // try this on the Event Handler Data Retrieve
+                MCRCategory category = new MCRCategoryDAOImpl().getCategory(cId, -1);
                 evt.put("class", category);
                 manager.fileUpdate(category.getId(), category,
                     new MCRJDOMContent(MCRCategoryTransformer.getMetaDataDocument(category, true)), evt);
+                    ((ArrayList<MCREvent>)currentSession.get(classQueue)).add(evt);
             });
-            list.forEach(cId -> {
-                MCREvent evt = new MCREvent(MCREvent.CLASS_TYPE, MCRClassEvent.COMMIT_EVENT);
-                MCRCategory category = new MCRCategoryDAOImpl().getCategory(cId, 0); // try this on the Event Handler Data Retrieve
-                evt.put("class", category);
-                manager.commitChanges(evt, null);
-            });
+            LOGGER.debug("Finished staging changes...");
+            // list.forEach(cId -> {
+            //     MCREvent evt = new MCREvent(MCREvent.CLASS_TYPE, MCRClassEvent.COMMIT_EVENT);
+            //     MCRCategory category = new MCRCategoryDAOImpl().getCategory(cId, 0);
+            //     evt.put("class", category);
+            //     evt.put("event", evt);
+            //     manager.commitChanges(evt, null);
+            // });
             LOGGER.info("Updated {} Objects in OCFL Store", list.size());
         } catch (Exception e) {
+            LOGGER.error("Error occured, rolling back...");
+            MCRTransactionHelper.rollbackTransaction();
+            // MCRTransactionHelper.beginTransaction();
             list.forEach(cId -> {
-                MCREvent evt = new MCREvent(MCREvent.CLASS_TYPE, MCRClassEvent.COMMIT_EVENT);
-                MCRCategory category = new MCRCategoryDAOImpl().getCategory(cId, 0); // try this on the Event Handler Data Retrieve
+                MCREvent evt = new MCREvent(MCREvent.CLASS_TYPE, MCREvent.CREATE_EVENT);
+                MCRCategory category = new MCRCategoryDAOImpl().getCategory(cId, 0);
                 evt.put("class", category);
                 manager.undoAction(MCROCFLEventHandler.getEventData(evt), evt);
             });

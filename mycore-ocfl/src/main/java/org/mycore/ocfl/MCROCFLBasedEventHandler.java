@@ -106,12 +106,12 @@ public class MCROCFLBasedEventHandler extends MCREventHandlerBase {
     private void classUpdate(MCREvent evt, MCRCategory obj) {
         MCRContent xml = new MCRJDOMContent(MCRCategoryTransformer.getMetaDataDocument(obj, false));
         MCRCategoryID mcrid = obj.getId();
-        manager.fileUpdate(mcrid, obj, xml, xml, evt);
+        manager.fileUpdate(mcrid, obj, xml, evt);
     }
     private void classDelete(MCREvent evt, MCRCategory obj) {
         MCRContent xml = new MCRJDOMContent(MCRCategoryTransformer.getMetaDataDocument(obj, false));
         MCRCategoryID mcrid = obj.getId();
-        manager.fileDelete(mcrid, obj, xml, xml, evt);
+        manager.fileDelete(mcrid, obj, xml, evt);
     }
 
     private void classUndo(MCREvent evt, MCRCategory obj) {

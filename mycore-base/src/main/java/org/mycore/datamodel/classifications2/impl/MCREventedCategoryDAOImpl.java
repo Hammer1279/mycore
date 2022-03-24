@@ -19,6 +19,7 @@
 package org.mycore.datamodel.classifications2.impl;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Set;
@@ -27,13 +28,13 @@ import javax.persistence.EntityManager;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.mycore.common.MCRSession;
 import org.mycore.common.MCRSessionMgr;
 import org.mycore.common.events.MCREvent;
 import org.mycore.common.events.MCREventManager;
 import org.mycore.datamodel.classifications2.MCRCategory;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
 import org.mycore.datamodel.classifications2.MCRLabel;
-import org.mycore.datamodel.classifications2.model.MCRClassEvent;
 
 /**
  * Category DAO Implementation with Event Handlers
@@ -94,6 +95,9 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
         super.moveCategory(id, newParentID, index);
         MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.UPDATE_EVENT);
         evt.put("class", super.getCategory(id, -1));
+        // Type is used for specifying a special Update operation
+        // originally named UType (Update Type), it is an Optional Value
+        evt.put("type", "move");
         manager.handleEvent(evt);
         callOnCommit(evt);
     }
@@ -196,18 +200,34 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
 
     protected boolean enQueue = false;
 
+    @SuppressWarnings("unchecked")
     protected void callOnCommit(MCREvent evt) {
-        if (!enQueue) {
-            MCRSessionMgr.getCurrentSession().onCommit(() -> {
-                MCRClassEvent evnt = new MCRClassEvent(EVENT_OBJECT, MCRClassEvent.COMMIT_EVENT);
-                evnt.put("class", evt.get("class"));
-                evnt.put("event", evt);
-                manager.handleEvent(evnt);
-                enQueue = false;
-            });
-            enQueue = true;
-        } else {
-            LOGGER.debug("CallOnCommit already queued, skipping.");
-        }
+        // if (!enQueue) {
+        //     // enqueue zur session hinzufügen
+        //     // events als liste zur session hinzufügen, und dann abarbeiten bei commit
+        //     // Session.put() um elemente hinzuzufügen
+        //     MCRSession currentSession = MCRSessionMgr.getCurrentSession();
+        //     currentSession.onCommit(() -> {
+        //         MCRClassEvent evnt = new MCRClassEvent(EVENT_OBJECT, MCRClassEvent.COMMIT_EVENT);
+        //         evnt.put("class", evt.get("class"));
+        //         evnt.put("event", evt);
+        //         manager.handleEvent(evnt);
+        //         enQueue = false;
+        //     });
+
+        //     enQueue = true;
+        // } else {
+        //     LOGGER.debug("CallOnCommit already queued, skipping.");
+        // }
+
+        String classQueue = "classQueue";
+
+        MCRSession currentSession = MCRSessionMgr.getCurrentSession();
+        // if (currentSession.get(classQueue) == null) {
+        //     currentSession.put(classQueue, new ArrayList<MCREvent>().add(evt));
+        // } else {
+        //     currentSession.put(classQueue, ((ArrayList<MCREvent>) currentSession.get(classQueue)).add(evt));
+        // }
+        ((ArrayList<MCREvent>)currentSession.get(classQueue)).add(evt);
     }
 }

@@ -18,9 +18,11 @@
 
 package org.mycore.datamodel.common;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
 
+import org.mycore.common.MCRSession;
 import org.mycore.common.content.MCRContent;
 import org.mycore.common.events.MCREvent;
 import org.mycore.datamodel.classifications2.MCRCategory;
@@ -32,17 +34,46 @@ import org.mycore.datamodel.classifications2.MCRCategoryID;
  */
 public interface MCRXMLClassificationManager {
 
-    void fileUpdate(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent xml, MCREvent eventData);
+    default void fileUpdate(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
+        fileUpdate(mcrid, mcrCg, xml, xml, eventData);
+    }
 
     void fileUpdate(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent clXml, MCRContent cgXml,
         MCREvent eventData);
 
-    void fileDelete(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent xml, MCREvent eventData);
+    default void fileDelete(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
+        fileDelete(mcrid, mcrCg, xml, xml, eventData);
+    }
 
     void fileDelete(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent clXml, MCRContent cgXml,
         MCREvent eventData);
 
+    void fileMove(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent clXml, MCRContent cgXml,
+        MCREvent eventData);
+
+    @SuppressWarnings("unchecked")
+    default void commitSession(MCRSession session) {
+        ArrayList<MCREvent> list = (ArrayList<MCREvent>)session.get("classQueue");
+        list.forEach(event -> {
+            commitChanges(event, new Date());
+        });
+        session.deleteObject("classQueue");
+    }
+    
     void commitChanges(MCREvent evt, Date lastModified);
+
+    @SuppressWarnings("unchecked")
+    default void rollbackSession(MCRSession session) {
+        ArrayList<MCREvent> list = (ArrayList<MCREvent>)session.get("classQueue");
+        list.forEach(event -> {
+            dropChanges(event);
+        });
+        session.deleteObject("classQueue");
+    }
+
+    void dropChanges(MCREvent evt);
+
+    void dropChanges(MCREvent evt, Map<String, Object> data);
 
     void undoAction(Map<String, Object> data, MCREvent evt);
 
@@ -53,7 +84,10 @@ public interface MCRXMLClassificationManager {
      * @param xml MCRContent
      * @param eventData MCREvent
      * @return Bool - if undo was successful
+     * @deprecated use {@link #undoAction(Map, MCREvent)} with
+     * {@link MCROCFLEventHandler#getEventData(MCREvent, boolean)}
      */
+    @Deprecated(forRemoval = true)
     Boolean undoAction(MCRCategoryID mcrId, MCRCategory mcrCg, MCRContent xml, MCREvent eventData);
 
     /**
@@ -61,7 +95,9 @@ public interface MCRXMLClassificationManager {
      * @param MCRCategoryID ID of the Category
      * @return MCRContent
      */
-    MCRContent retrieveContent(MCRCategoryID mcrid);
+    default MCRContent retrieveContent(MCRCategoryID mcrid) {
+        return retrieveContent(mcrid, null);
+    }
 
     /**
      * Load a Classification from the OCFL Store.

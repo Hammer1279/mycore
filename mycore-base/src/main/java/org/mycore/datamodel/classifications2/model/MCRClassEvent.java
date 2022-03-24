@@ -18,11 +18,14 @@
 
 package org.mycore.datamodel.classifications2.model;
 
+import org.mycore.common.MCRPersistenceTransaction;
 import org.mycore.common.events.MCREvent;
 
 /**
  * @author Tobias Lenhardt [Hammer1279]
+ * @deprecated use {@link MCRPersistenceTransaction} instead!
  */
+@Deprecated(forRemoval = true)
 public class MCRClassEvent extends MCREvent{
     public static final String COMMIT_EVENT = "commit";
 

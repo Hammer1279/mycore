@@ -49,6 +49,12 @@ public class MCROCFLEventHandler implements MCREventHandler {
         .getSingleInstanceOf("MCR.Classification.Manager", MCRXMLClassificationManager.class)
         .orElse(new MCROCFLXMLClassificationManager());
 
+    // public void getTransaction() {
+    //     ServiceLoader<MCRPersistenceTransaction> loader = ServiceLoader.load(MCRPersistenceTransaction.class);
+    //     Iterator<MCRPersistenceTransaction> iterator = loader.iterator();
+        
+    // }
+
     @Override
     @SuppressWarnings(value = "PMD.SwitchStmtsShouldHaveDefault")
     public void doHandleEvent(MCREvent evt) throws MCRException {
@@ -67,7 +73,15 @@ public class MCROCFLEventHandler implements MCREventHandler {
             switch (evt.getEventType()) {
                 case MCREvent.CREATE_EVENT:
                 case MCREvent.UPDATE_EVENT:
-                    manager.fileUpdate(mcrid, mcrCg, clXml, cgXml, evt);
+                    if (!evt.containsKey("type")) {
+                        manager.fileUpdate(mcrid, mcrCg, clXml, cgXml, evt);
+                    } else {
+                        switch ((String)evt.get("type")) {
+                            case "move":
+                                manager.fileMove(mcrid, mcrCg, clXml, cgXml, evt);
+                            break;
+                        }
+                    }
                     break;
                 case MCREvent.DELETE_EVENT:
                     manager.fileDelete(mcrid, mcrCg, clXml, cgXml, evt);
