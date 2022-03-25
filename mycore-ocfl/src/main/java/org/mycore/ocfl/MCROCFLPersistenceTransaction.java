@@ -42,7 +42,7 @@ public class MCROCFLPersistenceTransaction implements MCRPersistenceTransaction 
     protected Optional<MCRXMLClassificationManager> managerOpt = MCRConfiguration2
     .<MCRXMLClassificationManager>getSingleInstanceOf("MCR.Classification.Manager");
 
-    private boolean active = false;
+    // private boolean active = false;
 
     private boolean rollbackOnly = false;
 
