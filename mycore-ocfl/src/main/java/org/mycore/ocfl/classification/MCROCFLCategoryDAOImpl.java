@@ -31,7 +31,7 @@ import org.mycore.datamodel.classifications2.impl.MCRCategoryImpl;
  * Add Event Callers to the Category DAO Implementation
  * @author Tobias Lenhardt [Hammer1279]
  */
-@Deprecated(forRemoval = false)
+@Deprecated(forRemoval = true)
 public class MCROCFLCategoryDAOImpl extends MCRCategoryDAOImpl {
 
     /**
