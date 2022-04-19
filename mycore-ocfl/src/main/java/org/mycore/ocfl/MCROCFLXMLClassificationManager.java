@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.Level;
@@ -43,7 +42,6 @@ import org.mycore.common.content.MCRStreamContent;
 import org.mycore.common.events.MCREvent;
 import org.mycore.datamodel.classifications2.MCRCategory;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
-import org.mycore.datamodel.classifications2.model.MCRClassEvent;
 import org.mycore.datamodel.common.MCRXMLClassificationManager;
 import org.xml.sax.SAXException;
 
@@ -76,7 +74,6 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         Map.entry(MCREvent.CREATE_EVENT, MCROCFLMetadataVersion.CREATED),
         Map.entry(MCREvent.UPDATE_EVENT, MCROCFLMetadataVersion.UPDATED),
         Map.entry(MCREvent.DELETE_EVENT, MCROCFLMetadataVersion.DELETED),
-        Map.entry(MCRClassEvent.COMMIT_EVENT, 'G'), // gommit
         Map.entry(MCREvent.REPAIR_EVENT, MCROCFLMetadataVersion.REPAIRED)));
 
     protected static char convertMessageToType(String message) throws MCRPersistenceException {
@@ -169,12 +166,10 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
     /**
      * Undoes an Action after a Failed Event
      * @param data {@link MCROCFLEventHandler#getEventData(MCREvent, boolean)}
-     * @param evt {@link MCREvent} | {@link MCRClassEvent}
+     * @param evt {@link MCREvent} | {@link MCREvent}
      */
     public void undoAction(Map<String, Object> data, MCREvent evt) {
-        if (!Objects.equals(evt.getEventType(), MCRClassEvent.COMMIT_EVENT)) {
-            dropChanges(evt, data);
-        }
+        dropChanges(evt, data);
     }
 
     /**

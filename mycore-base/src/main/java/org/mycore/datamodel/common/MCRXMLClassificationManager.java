@@ -65,9 +65,8 @@ public interface MCRXMLClassificationManager {
     @SuppressWarnings("unchecked")
     default void rollbackSession(MCRSession session) {
         ArrayList<MCREvent> list = (ArrayList<MCREvent>)session.get("classQueue");
-        list.forEach(event -> {
-            dropChanges(event);
-        });
+        if(list == null) {return;}
+        list.forEach(this::dropChanges);
         session.deleteObject("classQueue");
     }
 

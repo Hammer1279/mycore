@@ -67,7 +67,7 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
         MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.CREATE_EVENT);
         evt.put("class", category);
         manager.handleEvent(evt);
-        callOnCommit(evt);
+        queueForCommit(evt);
         return cg;
     }
 
@@ -77,7 +77,7 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
         evt.put("class", super.getCategory(id, -1));
         super.deleteCategory(id);
         manager.handleEvent(evt, MCREventManager.BACKWARD);
-        callOnCommit(evt);
+        queueForCommit(evt);
     }
 
     /*
@@ -99,7 +99,7 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
         // originally named UType (Update Type), it is an Optional Value
         evt.put("type", "move");
         manager.handleEvent(evt);
-        callOnCommit(evt);
+        queueForCommit(evt);
     }
 
     @Override
@@ -108,7 +108,7 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
         MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.UPDATE_EVENT);
         evt.put("class", super.getCategory(id, -1));
         manager.handleEvent(evt);
-        callOnCommit(evt);
+        queueForCommit(evt);
         return category;
     }
 
@@ -118,7 +118,7 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
         MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.UPDATE_EVENT);
         evt.put("class", newCategory);
         manager.handleEvent(evt);
-        callOnCommit(evt);
+        queueForCommit(evt);
         return colList;
     }
 
@@ -128,7 +128,7 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
         MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.UPDATE_EVENT);
         evt.put("class", super.getCategory(id, -1));
         manager.handleEvent(evt);
-        callOnCommit(evt);
+        queueForCommit(evt);
         return category;
     }
 
@@ -138,7 +138,7 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
         MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.UPDATE_EVENT);
         evt.put("class", super.getCategory(id, -1));
         manager.handleEvent(evt);
-        callOnCommit(evt);
+        queueForCommit(evt);
         return category;
     }
 
@@ -148,7 +148,7 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
         MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.UPDATE_EVENT);
         evt.put("class", super.getCategory(id, -1));
         manager.handleEvent(evt);
-        callOnCommit(evt);
+        queueForCommit(evt);
         return category;
     }
 
@@ -201,33 +201,9 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
     protected boolean enQueue = false;
 
     @SuppressWarnings("unchecked")
-    protected void callOnCommit(MCREvent evt) {
-        // if (!enQueue) {
-        //     // enqueue zur session hinzufügen
-        //     // events als liste zur session hinzufügen, und dann abarbeiten bei commit
-        //     // Session.put() um elemente hinzuzufügen
-        //     MCRSession currentSession = MCRSessionMgr.getCurrentSession();
-        //     currentSession.onCommit(() -> {
-        //         MCRClassEvent evnt = new MCRClassEvent(EVENT_OBJECT, MCRClassEvent.COMMIT_EVENT);
-        //         evnt.put("class", evt.get("class"));
-        //         evnt.put("event", evt);
-        //         manager.handleEvent(evnt);
-        //         enQueue = false;
-        //     });
-
-        //     enQueue = true;
-        // } else {
-        //     LOGGER.debug("CallOnCommit already queued, skipping.");
-        // }
-
+    protected void queueForCommit(MCREvent evt) {
         String classQueue = "classQueue";
-
         MCRSession currentSession = MCRSessionMgr.getCurrentSession();
-        // if (currentSession.get(classQueue) == null) {
-        //     currentSession.put(classQueue, new ArrayList<MCREvent>().add(evt));
-        // } else {
-        //     currentSession.put(classQueue, ((ArrayList<MCREvent>) currentSession.get(classQueue)).add(evt));
-        // }
         ((ArrayList<MCREvent>)currentSession.get(classQueue)).add(evt);
     }
 }

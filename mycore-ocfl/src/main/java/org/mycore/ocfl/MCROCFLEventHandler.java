@@ -18,7 +18,6 @@
 
 package org.mycore.ocfl;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -34,7 +33,6 @@ import org.mycore.common.events.MCREventHandler;
 import org.mycore.datamodel.classifications2.MCRCategory;
 import org.mycore.datamodel.classifications2.MCRCategoryDAOFactory;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
-import org.mycore.datamodel.classifications2.model.MCRClassEvent;
 import org.mycore.datamodel.classifications2.utils.MCRCategoryTransformer;
 import org.mycore.datamodel.common.MCRXMLClassificationManager;
 
@@ -48,12 +46,6 @@ public class MCROCFLEventHandler implements MCREventHandler {
     protected MCRXMLClassificationManager manager = MCRConfiguration2
         .getSingleInstanceOf("MCR.Classification.Manager", MCRXMLClassificationManager.class)
         .orElse(new MCROCFLXMLClassificationManager());
-
-    // public void getTransaction() {
-    //     ServiceLoader<MCRPersistenceTransaction> loader = ServiceLoader.load(MCRPersistenceTransaction.class);
-    //     Iterator<MCRPersistenceTransaction> iterator = loader.iterator();
-        
-    // }
 
     @Override
     @SuppressWarnings(value = "PMD.SwitchStmtsShouldHaveDefault")
@@ -88,10 +80,10 @@ public class MCROCFLEventHandler implements MCREventHandler {
                     break;
                 case MCREvent.REPAIR_EVENT:
                     break;
-                case MCRClassEvent.COMMIT_EVENT:
-                    // manager.commitChanges(mcrid.toString(), evt.getEventType(), new Date(), evt);
-                    manager.commitChanges(evt, new Date());
-                    break;
+                // case MCRClassEvent.COMMIT_EVENT:
+                //     // manager.commitChanges(mcrid.toString(), evt.getEventType(), new Date(), evt);
+                //     manager.commitChanges(evt, new Date());
+                //     break;
                 default:
                     LOGGER.error("No Method available for {}", evt.getEventType());
             }
