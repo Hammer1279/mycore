@@ -70,7 +70,7 @@ public class MCROCFLEventHandler implements MCREventHandler {
                     } else {
                         switch ((String)evt.get("type")) {
                             case "move":
-                                manager.fileMove(mcrid, mcrCg, clXml, cgXml, evt);
+                                manager.fileMove(mcrid, data, evt);
                             break;
                         }
                     }

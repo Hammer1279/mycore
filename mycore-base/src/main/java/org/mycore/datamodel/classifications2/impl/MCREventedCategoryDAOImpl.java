@@ -92,14 +92,16 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
 
     @Override
     public void moveCategory(MCRCategoryID id, MCRCategoryID newParentID, int index) {
-        super.moveCategory(id, newParentID, index);
         MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.UPDATE_EVENT);
         evt.put("class", super.getCategory(id, -1));
+        evt.put("parent", super.getCategory(newParentID, -1));
+        evt.put("index", index);
         // Type is used for specifying a special Update operation
         // originally named UType (Update Type), it is an Optional Value
         evt.put("type", "move");
         manager.handleEvent(evt);
         queueForCommit(evt);
+        super.moveCategory(id, newParentID, index);
     }
 
     @Override

@@ -21,8 +21,11 @@ package org.mycore.datamodel.common;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 
+import org.apache.logging.log4j.LogManager;
 import org.mycore.common.MCRSession;
+import org.mycore.common.MCRSessionMgr;
 import org.mycore.common.content.MCRContent;
 import org.mycore.common.events.MCREvent;
 import org.mycore.datamodel.classifications2.MCRCategory;
@@ -48,24 +51,36 @@ public interface MCRXMLClassificationManager {
     void fileDelete(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent clXml, MCRContent cgXml,
         MCREvent eventData);
 
-    void fileMove(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent clXml, MCRContent cgXml,
-        MCREvent eventData);
+    void fileMove(MCRCategoryID mcrid, Map<String, Object> data, MCREvent eventData);
+
+    default void commitSession(MCRSession session) {
+        commitSession(Optional.ofNullable(session));
+    }
 
     @SuppressWarnings("unchecked")
-    default void commitSession(MCRSession session) {
-        ArrayList<MCREvent> list = (ArrayList<MCREvent>)session.get("classQueue");
+    default void commitSession(Optional<MCRSession> sessionOpt) {
+        MCRSession session = sessionOpt.orElse(MCRSessionMgr.getCurrentSession());
+        ArrayList<MCREvent> list = (ArrayList<MCREvent>) session.get("classQueue");
         list.forEach(event -> {
             commitChanges(event, new Date());
         });
         session.deleteObject("classQueue");
     }
-    
+
     void commitChanges(MCREvent evt, Date lastModified);
 
-    @SuppressWarnings("unchecked")
     default void rollbackSession(MCRSession session) {
-        ArrayList<MCREvent> list = (ArrayList<MCREvent>)session.get("classQueue");
-        if(list == null) {return;}
+        rollbackSession(Optional.ofNullable(session));
+    }
+
+    @SuppressWarnings("unchecked")
+    default void rollbackSession(Optional<MCRSession> sessionOpt) {
+        MCRSession session = sessionOpt.orElse(MCRSessionMgr.getCurrentSession());
+        ArrayList<MCREvent> list = (ArrayList<MCREvent>) session.get("classQueue");
+        if (list == null) {
+            LogManager.getLogger(MCRXMLClassificationManager.class).error("List is empty!");
+            return;
+        }
         list.forEach(this::dropChanges);
         session.deleteObject("classQueue");
     }
@@ -76,18 +91,18 @@ public interface MCRXMLClassificationManager {
 
     void undoAction(Map<String, Object> data, MCREvent evt);
 
-    /**
-     * Undoes an Action after a Failed Event
-     * @param mcrId MCRCategoryID
-     * @param mcrCg MCRCategory
-     * @param xml MCRContent
-     * @param eventData MCREvent
-     * @return Bool - if undo was successful
-     * @deprecated use {@link #undoAction(Map, MCREvent)} with
-     * {@link MCROCFLEventHandler#getEventData(MCREvent, boolean)}
-     */
-    @Deprecated(forRemoval = true)
-    Boolean undoAction(MCRCategoryID mcrId, MCRCategory mcrCg, MCRContent xml, MCREvent eventData);
+    // /**
+    //  * Undoes an Action after a Failed Event
+    //  * @param mcrId MCRCategoryID
+    //  * @param mcrCg MCRCategory
+    //  * @param xml MCRContent
+    //  * @param eventData MCREvent
+    //  * @return Bool - if undo was successful
+    //  * @deprecated use {@link #undoAction(Map, MCREvent)} with
+    //  * {@link MCROCFLEventHandler#getEventData(MCREvent, boolean)}
+    //  */
+    // @Deprecated(forRemoval = true)
+    // Boolean undoAction(MCRCategoryID mcrId, MCRCategory mcrCg, MCRContent xml, MCREvent eventData);
 
     /**
      * Load a Classification from the OCFL Store.

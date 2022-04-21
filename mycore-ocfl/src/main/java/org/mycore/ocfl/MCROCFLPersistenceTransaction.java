@@ -53,7 +53,7 @@ public class MCROCFLPersistenceTransaction implements MCRPersistenceTransaction 
     public boolean isReady() {
         // TODO Auto-generated method stub
         LOGGER.debug("TRANSACTION READY CHECK - {}", managerOpt.isPresent());
-        return managerOpt.isPresent();
+        return managerOpt.isPresent() && !isActive();
     }
 
     /**
@@ -63,7 +63,11 @@ public class MCROCFLPersistenceTransaction implements MCRPersistenceTransaction 
     public void begin() {
         // TODO Auto-generated method stub
         LOGGER.debug("TRANSACTION BEGIN");
-        if(isActive()){throw new IllegalStateException("TRANSACTION BEGIN");}
+        // if(isActive()){throw new IllegalStateException("TRANSACTION BEGIN");}
+        if(isActive()) {
+            LOGGER.debug("EXISTING TRANSACTION, ROLLING BACK FOR CLEAN STATE");
+            rollback();
+        }
         currentSession = MCRSessionMgr.getCurrentSession();
         currentSession.put("classQueue", new ArrayList<MCREvent>());
         // active=true;
