@@ -24,10 +24,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.Level;
@@ -37,8 +34,6 @@ import org.jdom2.Document;
 import org.jdom2.JDOMException;
 import org.mycore.common.MCRException;
 import org.mycore.common.MCRPersistenceException;
-import org.mycore.common.MCRSession;
-import org.mycore.common.MCRSessionMgr;
 import org.mycore.common.MCRUsageException;
 import org.mycore.common.config.annotation.MCRProperty;
 import org.mycore.common.content.MCRContent;
@@ -163,25 +158,11 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
             event = evt;
         }
         if (mcrCg.isCategory()) {
-            // with every single change, the main file gets added again and again
             fileUpdate(mcrCg.getRoot().getId(), mcrCg.getRoot(), rtXml, evt);
-            // MCREvent event2 = new MCREvent(MCREvent.CLASS_TYPE, MCREvent.UPDATE_EVENT);
-            // commitChanges(event2, lastModified);
         }
         VersionInfo versionInfo = buildVersionInfo(event.getEventType(), lastModified);
         getRepository().commitStagedChanges(getName(mcrid), versionInfo);
     }
-
-    // public void commitSession(Optional<MCRSession> sessionOpt) {
-    //     MCRSession session = sessionOpt.orElse(MCRSessionMgr.getCurrentSession());
-    //     ArrayList<MCREvent> list = (ArrayList<MCREvent>)session.get("classQueue");
-    //     Set<MCRCategory> parentSet = new HashSet<>();
-    //     list.forEach(event -> {
-    //         // every staged change calls a commit, is it necessary?
-    //         commitChanges(event, new Date());
-    //     });
-    //     session.deleteObject("classQueue");
-    // }
 
     public void dropChanges(MCREvent evt) {
         dropChanges(evt, MCROCFLEventHandler.getEventData(evt));

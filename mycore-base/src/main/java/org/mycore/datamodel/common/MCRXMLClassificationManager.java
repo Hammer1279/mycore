@@ -61,10 +61,12 @@ public interface MCRXMLClassificationManager {
     default void commitSession(Optional<MCRSession> sessionOpt) {
         MCRSession session = sessionOpt.orElse(MCRSessionMgr.getCurrentSession());
         ArrayList<MCREvent> list = (ArrayList<MCREvent>) session.get("classQueue");
-        list.forEach(event -> {
-            commitChanges(event, new Date());
-        });
+        list.forEach(this::commitChanges);
         session.deleteObject("classQueue");
+    }
+
+    default void commitChanges(MCREvent evt) {
+        commitChanges(evt, new Date());
     }
 
     void commitChanges(MCREvent evt, Date lastModified);
@@ -90,19 +92,6 @@ public interface MCRXMLClassificationManager {
     void dropChanges(MCREvent evt, Map<String, Object> data);
 
     void undoAction(Map<String, Object> data, MCREvent evt);
-
-    // /**
-    //  * Undoes an Action after a Failed Event
-    //  * @param mcrId MCRCategoryID
-    //  * @param mcrCg MCRCategory
-    //  * @param xml MCRContent
-    //  * @param eventData MCREvent
-    //  * @return Bool - if undo was successful
-    //  * @deprecated use {@link #undoAction(Map, MCREvent)} with
-    //  * {@link MCROCFLEventHandler#getEventData(MCREvent, boolean)}
-    //  */
-    // @Deprecated(forRemoval = true)
-    // Boolean undoAction(MCRCategoryID mcrId, MCRCategory mcrCg, MCRContent xml, MCREvent eventData);
 
     /**
      * Load a Classification from the OCFL Store.
