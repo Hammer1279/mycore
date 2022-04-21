@@ -139,10 +139,6 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         });
     }
 
-    public void fileMove(MCRCategoryID mcrid, Map<String, Object> data, MCREvent eventData) {
-        fileMove(data, eventData);
-    }
-
     public void fileMove(Map<String, Object> data, MCREvent eventData) {
         MCRCategoryImpl oldParent = (MCRCategoryImpl)data.get("ctg");
         MCRCategoryImpl newParent = (MCRCategoryImpl)eventData.get("parent");

@@ -51,7 +51,7 @@ public interface MCRXMLClassificationManager {
     void fileDelete(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent clXml, MCRContent cgXml,
         MCREvent eventData);
 
-    void fileMove(MCRCategoryID mcrid, Map<String, Object> data, MCREvent eventData);
+    void fileMove(Map<String, Object> data, MCREvent eventData);
 
     default void commitSession(MCRSession session) {
         commitSession(Optional.ofNullable(session));
