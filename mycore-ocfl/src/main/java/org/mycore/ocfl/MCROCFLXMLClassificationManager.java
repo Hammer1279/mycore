@@ -24,7 +24,9 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.Level;
@@ -34,6 +36,8 @@ import org.jdom2.Document;
 import org.jdom2.JDOMException;
 import org.mycore.common.MCRException;
 import org.mycore.common.MCRPersistenceException;
+import org.mycore.common.MCRSession;
+import org.mycore.common.MCRSessionMgr;
 import org.mycore.common.MCRUsageException;
 import org.mycore.common.config.annotation.MCRProperty;
 import org.mycore.common.content.MCRContent;
@@ -42,6 +46,8 @@ import org.mycore.common.content.MCRStreamContent;
 import org.mycore.common.events.MCREvent;
 import org.mycore.datamodel.classifications2.MCRCategory;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
+import org.mycore.datamodel.classifications2.impl.MCRCategoryImpl;
+import org.mycore.datamodel.classifications2.utils.MCRCategoryTransformer;
 import org.mycore.datamodel.common.MCRXMLClassificationManager;
 import org.xml.sax.SAXException;
 
@@ -107,6 +113,11 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
             });
         } catch (IOException e) {
             throw new MCRPersistenceException("Failed to update object '" + objName + "'", e);
+        } catch (IllegalArgumentException e) {
+            // this gets thrown when the deduplication deletes an object and it tries to move it
+            LOGGER.warn("IllegalArgumentException happened, Ignoring...");
+            // dropChanges(mcrid);
+            // LOGGER.error("Something has gone Wrong!", e);
         }
 
     }
@@ -127,10 +138,18 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         });
     }
 
-    public void fileMove(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent clXml, MCRContent cgXml,
-        MCREvent eventData) {
-        // TODO make something actually move
-        fileUpdate(mcrid, mcrCg, clXml, cgXml, eventData);
+    public void fileMove(Map<String, Object> data, MCREvent eventData) {
+        MCRCategoryImpl oldParent = (MCRCategoryImpl)data.get("ctg");
+        MCRCategoryImpl newParent = (MCRCategoryImpl)eventData.get("parent");
+        int index = (int)eventData.get("index");
+        MCRCategoryImpl mcrCg = (MCRCategoryImpl)data.get("ctg");
+        fileDelete(mcrCg.getId(), mcrCg, (MCRContent)data.get("xml"), eventData);
+        mcrCg.setParent(newParent);
+        newParent.getChildren().add(index, mcrCg);
+        MCRContent newParentXml = new MCRJDOMContent(MCRCategoryTransformer.getMetaDataElement(newParent, true));
+        MCRContent oldParentXml = new MCRJDOMContent(MCRCategoryTransformer.getMetaDataElement(oldParent, true));
+        fileUpdate(newParent.getId(), newParent, newParentXml, eventData);
+        fileUpdate(oldParent.getId(), oldParent, oldParentXml, eventData);
     }
 
     public void commitChanges(MCREvent evt, Date lastModified) {
@@ -145,8 +164,30 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         if (mcrCg.isCategory()) {
             fileUpdate(mcrCg.getRoot().getId(), mcrCg.getRoot(), rtXml, evt);
         }
+        LOGGER.debug("Committing <{}> in Object <{}>", mcrid.getID(), mcrid.getRootID());
         VersionInfo versionInfo = buildVersionInfo(event.getEventType(), lastModified);
         getRepository().commitStagedChanges(getName(mcrid), versionInfo);
+    }
+
+    @SuppressWarnings("unchecked")
+    public void commitSession(Optional<MCRSession> sessionOpt) {
+        MCRSession session = sessionOpt.orElse(MCRSessionMgr.getCurrentSession());
+        ArrayList<MCREvent> list = (ArrayList<MCREvent>) session.get("classQueue");
+        HashMap<MCRCategoryID, MCREvent> set = new HashMap<>();
+        
+        // go through the list and call commit on every entry, and let
+        // deduplification handle the rest
+        // list.forEach(this::commitChanges);
+        
+        // dedup the results here already and only call commit once per object
+        list.forEach(evt -> {
+            set.putIfAbsent((MCRCategoryID)evt.get("mid"), evt);
+        });
+        set.forEach((id, evt) -> {
+            commitChanges(evt);
+        });
+
+        session.deleteObject("classQueue");
     }
 
     public void dropChanges(MCREvent evt) {
@@ -155,6 +196,10 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
 
     public void dropChanges(MCREvent evt, Map<String, Object> data) {
         MCRCategoryID mcrid = (MCRCategoryID) data.get("mid");
+        dropChanges(mcrid);
+    }
+
+    private void dropChanges(MCRCategoryID mcrid) {
         if (getRepository().hasStagedChanges(getName(mcrid))) {
             getRepository().purgeStagedChanges(getName(mcrid));
             LOGGER.debug("Dropped changes of {}", getName(mcrid));
@@ -170,22 +215,6 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
      */
     public void undoAction(Map<String, Object> data, MCREvent evt) {
         dropChanges(evt, data);
-    }
-
-    /**
-    * Undoes an Action after a Failed Event
-    * @param mcrId MCRCategoryID
-    * @param mcrCg MCRCategory
-    * @param xml MCRContent
-    * @param eventData MCREvent
-    * @return Bool - if undo was successful
-    * @deprecated use {@link #undoAction(Map, MCREvent)}
-    */
-    @Deprecated(forRemoval = false)
-    public Boolean undoAction(MCRCategoryID mcrId, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
-        // TODO unfinished, make something to undo changes if something failed without dataloss
-        undoAction(MCROCFLEventHandler.getEventData(eventData), eventData);
-        return true;
     }
 
     /**

@@ -70,7 +70,7 @@ public class MCROCFLEventHandler implements MCREventHandler {
                     } else {
                         switch ((String)evt.get("type")) {
                             case "move":
-                                manager.fileMove(mcrid, mcrCg, clXml, cgXml, evt);
+                                manager.fileMove(data, evt);
                             break;
                         }
                     }
@@ -80,10 +80,6 @@ public class MCROCFLEventHandler implements MCREventHandler {
                     break;
                 case MCREvent.REPAIR_EVENT:
                     break;
-                // case MCRClassEvent.COMMIT_EVENT:
-                //     // manager.commitChanges(mcrid.toString(), evt.getEventType(), new Date(), evt);
-                //     manager.commitChanges(evt, new Date());
-                //     break;
                 default:
                     LOGGER.error("No Method available for {}", evt.getEventType());
             }
