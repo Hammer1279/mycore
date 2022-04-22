@@ -26,6 +26,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
@@ -93,7 +94,8 @@ public class MCROCFLDevCommands {
     public static void readAllClass() throws IOException {
         List<MCRCategoryID> list = MCRCategoryDAOFactory.getInstance().getRootCategoryIDs();
         for (MCRCategoryID cId : list) {
-            readVerClass(cId.getID());
+            LOGGER.debug("Exporting: {}", cId.getRootID());
+            readVerClass(cId.getRootID());
         }
         LOGGER.info("Command Run!");
     }

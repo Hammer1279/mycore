@@ -29,6 +29,7 @@ public abstract class MCROCFLRepositoryProvider {
 
     public static final String REPOSITORY_PROPERTY_PREFIX = "MCR.OCFL.Repository.";
 
+    @SuppressWarnings("java:S3655")
     public static OcflRepository getRepository(String id){
         return MCRConfiguration2.getSingleInstanceOf(REPOSITORY_PROPERTY_PREFIX + id)
                 .map(MCROCFLRepositoryProvider.class::cast)

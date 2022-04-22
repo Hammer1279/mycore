@@ -24,7 +24,9 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.Level;
@@ -34,7 +36,10 @@ import org.jdom2.Document;
 import org.jdom2.JDOMException;
 import org.mycore.common.MCRException;
 import org.mycore.common.MCRPersistenceException;
+import org.mycore.common.MCRSession;
+import org.mycore.common.MCRSessionMgr;
 import org.mycore.common.MCRUsageException;
+import org.mycore.common.config.MCRConfiguration2;
 import org.mycore.common.config.annotation.MCRProperty;
 import org.mycore.common.content.MCRContent;
 import org.mycore.common.content.MCRJDOMContent;
@@ -65,7 +70,8 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
     protected static final String CLASSIFICATION_PREFIX = "mcrclass:";
 
     // include the "/classification" directory
-    private static final boolean INC_CLSDIR = false;
+    // private static final boolean INC_CLSDIR = false;
+    private static final boolean INC_CLSDIR = MCRConfiguration2.getBoolean("MCR.OCFL.UseClassSubDir").orElse(false);
 
     private String rootFolder = INC_CLSDIR ? "classification/" : "";
 
@@ -76,7 +82,8 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         Map.entry(MCREvent.CREATE_EVENT, MCROCFLMetadataVersion.CREATED),
         Map.entry(MCREvent.UPDATE_EVENT, MCROCFLMetadataVersion.UPDATED),
         Map.entry(MCREvent.DELETE_EVENT, MCROCFLMetadataVersion.DELETED),
-        Map.entry(MCREvent.REPAIR_EVENT, MCROCFLMetadataVersion.REPAIRED)));
+        Map.entry(MCREvent.REPAIR_EVENT, MCROCFLMetadataVersion.REPAIRED),
+        Map.entry("Auto-generated empty object version.", MCROCFLMetadataVersion.INITIALIZED)));
 
     protected static char convertMessageToType(String message) throws MCRPersistenceException {
         if (!MESSAGE_TYPE_MAPPING.containsKey(message)) {
@@ -160,8 +167,26 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         if (mcrCg.isCategory()) {
             fileUpdate(mcrCg.getRoot().getId(), mcrCg.getRoot(), rtXml, evt);
         }
+        LOGGER.debug("Committing <{}> in Object <{}>", mcrid.getID(), mcrid.getRootID());
         VersionInfo versionInfo = buildVersionInfo(event.getEventType(), lastModified);
         getRepository().commitStagedChanges(getName(mcrid), versionInfo);
+    }
+
+    @SuppressWarnings("unchecked")
+    public void commitSession(Optional<MCRSession> sessionOpt) {
+        MCRSession session = sessionOpt.orElse(MCRSessionMgr.getCurrentSession());
+        ArrayList<MCREvent> list = (ArrayList<MCREvent>) session.get("classQueue");
+        HashMap<MCRCategoryID, MCREvent> set = new HashMap<>();
+        
+        // dedup the results here already and only call commit once per object
+        list.forEach(evt -> {
+            set.putIfAbsent((MCRCategoryID)evt.get("mid"), evt);
+        });
+        set.forEach((id, evt) -> {
+            commitChanges(evt);
+        });
+
+        session.deleteObject("classQueue");
     }
 
     public void dropChanges(MCREvent evt) {
@@ -192,22 +217,6 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
     }
 
     /**
-    * Undoes an Action after a Failed Event
-    * @param mcrId MCRCategoryID
-    * @param mcrCg MCRCategory
-    * @param xml MCRContent
-    * @param eventData MCREvent
-    * @return Bool - if undo was successful
-    * @deprecated use {@link #undoAction(Map, MCREvent)}
-    */
-    @Deprecated(forRemoval = true)
-    public Boolean undoAction(MCRCategoryID mcrId, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
-        // TODO unfinished, make something to undo changes if something failed without dataloss
-        undoAction(MCROCFLEventHandler.getEventData(eventData), eventData);
-        return true;
-    }
-
-    /**
      * Load a Classification from the OCFL Store.
      * @param mcrid ID of the Category
      * @param revision Revision of the Category
@@ -227,6 +236,10 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
 
         if (convertMessageToType(repo.getObject(vId).getVersionInfo().getMessage()) == MCROCFLMetadataVersion.DELETED) {
             throw new MCRUsageException("Cannot read already deleted object '" + objName + "'");
+        }
+
+        if (convertMessageToType(repo.getObject(vId).getVersionInfo().getMessage()) == MCROCFLMetadataVersion.INITIALIZED) {
+            throw new MCRUsageException("'" + objName + "' does not have any content yet");
         }
 
         try (InputStream storedContentStream = repo.getObject(vId).getFile(buildFilePath(mcrid)).getStream()) {

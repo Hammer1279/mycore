@@ -45,6 +45,8 @@ public class MCROCFLHashRepositoryProvider extends MCROCFLRepositoryProvider {
 
     protected OcflRepository repository;
 
+    protected boolean mutable = false;
+
     @Override
     public OcflRepository getRepository() {
         return repository;
@@ -58,10 +60,13 @@ public class MCROCFLHashRepositoryProvider extends MCROCFLRepositoryProvider {
         if(Files.notExists(repositoryRoot)){
             Files.createDirectories(repositoryRoot);
         }
-        this.repository = new OcflRepositoryBuilder()
-            .defaultLayoutConfig(getExtensionConfig())
-            .storage(storage -> storage.fileSystem(repositoryRoot))
-            .workDir(workDir).build();
+
+        OcflRepositoryBuilder builder = new OcflRepositoryBuilder()
+        .defaultLayoutConfig(getExtensionConfig())
+        .storage(storage -> storage.fileSystem(repositoryRoot))
+        .workDir(workDir);
+
+        this.repository = this.mutable ? builder.buildMutable() : builder.build();
     }
 
     public OcflExtensionConfig getExtensionConfig() {
@@ -85,6 +90,12 @@ public class MCROCFLHashRepositoryProvider extends MCROCFLRepositoryProvider {
     @MCRProperty(name = "WorkDir")
     public MCROCFLHashRepositoryProvider setWorkDir(String workDir) {
         this.workDir = Paths.get(workDir);
+        return this;
+    }
+
+    @MCRProperty(name = "mutable", required = false)
+    public MCROCFLHashRepositoryProvider setMutable(String bool) {
+        this.mutable = Boolean.parseBoolean(bool);
         return this;
     }
 }
