@@ -42,6 +42,8 @@ public class MCROCFLMetadataVersion extends MCRAbstractMetadataVersion<MCRConten
 
     public static final char REPAIRED = 'R';
 
+    public static final char INITIALIZED = 'I';
+
     public MCROCFLMetadataVersion(MCRContent vm, String revision, String user, Date date, char type) {
         super(vm, revision, user, date, type);
     }

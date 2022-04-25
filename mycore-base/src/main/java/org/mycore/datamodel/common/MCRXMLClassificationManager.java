@@ -91,6 +91,8 @@ public interface MCRXMLClassificationManager {
 
     void dropChanges(MCREvent evt, Map<String, Object> data);
 
+    void dropChanges(MCRCategoryID mcrid);
+
     void undoAction(Map<String, Object> data, MCREvent evt);
 
     /**

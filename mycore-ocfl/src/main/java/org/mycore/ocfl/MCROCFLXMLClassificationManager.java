@@ -25,9 +25,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+
+import com.google.errorprone.annotations.DoNotCall;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -39,12 +42,14 @@ import org.mycore.common.MCRPersistenceException;
 import org.mycore.common.MCRSession;
 import org.mycore.common.MCRSessionMgr;
 import org.mycore.common.MCRUsageException;
+import org.mycore.common.config.MCRConfiguration2;
 import org.mycore.common.config.annotation.MCRProperty;
 import org.mycore.common.content.MCRContent;
 import org.mycore.common.content.MCRJDOMContent;
 import org.mycore.common.content.MCRStreamContent;
 import org.mycore.common.events.MCREvent;
 import org.mycore.datamodel.classifications2.MCRCategory;
+import org.mycore.datamodel.classifications2.MCRCategoryDAOFactory;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
 import org.mycore.datamodel.classifications2.impl.MCRCategoryImpl;
 import org.mycore.datamodel.classifications2.utils.MCRCategoryTransformer;
@@ -69,7 +74,8 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
     protected static final String CLASSIFICATION_PREFIX = "mcrclass:";
 
     // include the "/classification" directory
-    private static final boolean INC_CLSDIR = false;
+    // private static final boolean INC_CLSDIR = false;
+    private static final boolean INC_CLSDIR = MCRConfiguration2.getBoolean("MCR.OCFL.UseClassSubDir").orElse(false);
 
     private String rootFolder = INC_CLSDIR ? "classification/" : "";
 
@@ -80,7 +86,8 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         Map.entry(MCREvent.CREATE_EVENT, MCROCFLMetadataVersion.CREATED),
         Map.entry(MCREvent.UPDATE_EVENT, MCROCFLMetadataVersion.UPDATED),
         Map.entry(MCREvent.DELETE_EVENT, MCROCFLMetadataVersion.DELETED),
-        Map.entry(MCREvent.REPAIR_EVENT, MCROCFLMetadataVersion.REPAIRED)));
+        Map.entry(MCREvent.REPAIR_EVENT, MCROCFLMetadataVersion.REPAIRED),
+        Map.entry("Auto-generated empty object version.", MCROCFLMetadataVersion.INITIALIZED)));
 
     protected static char convertMessageToType(String message) throws MCRPersistenceException {
         if (!MESSAGE_TYPE_MAPPING.containsKey(message)) {
@@ -89,8 +96,25 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         return MESSAGE_TYPE_MAPPING.get(message);
     }
 
-    protected MutableOcflRepository getRepository() {
+    protected MutableOcflRepository getRepository() throws ClassCastException {
         return (MutableOcflRepository) MCROCFLRepositoryProvider.getRepository(repositoryKey);
+    }
+
+    protected OcflRepository getUnmutableRepository() {
+        return MCROCFLRepositoryProvider.getRepository(repositoryKey);
+    }
+
+    protected boolean isMutable() {
+        try {
+            getRepository();
+            return true;
+        } catch (ClassCastException e) {
+            return false;
+        }
+    }
+
+    protected boolean isClean(MCRCategoryID mcrid) {
+        return !getRepository().hasStagedChanges(getName(mcrid));
     }
 
     public void fileUpdate(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent clXml, MCRContent cgXml,
@@ -100,11 +124,12 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         String message = eventData.getEventType();
         Date lastModified = new Date();
         MCRContent xml = mcrCg.isClassification() ? clXml : cgXml;
-        try {
-            lastModified = new Date(TimeUnit.SECONDS.toMillis(xml.lastModified()));
-        } catch (IOException e1) {
-            LOGGER.throwing(Level.ERROR, new MCRException("Cannot Fetch last Modified"));
-        }
+        // try {
+        lastModified = new Date(MCRCategoryDAOFactory.getInstance().getLastModified(mcrid.getRootID()));
+        // lastModified = new Date(TimeUnit.SECONDS.toMillis(xml.lastModified()));
+        // } catch (IOException e1) {
+        //     LOGGER.throwing(Level.ERROR, new MCRException("Cannot Fetch last Modified"));
+        // }
 
         try (InputStream objectAsStream = xml.getInputStream()) {
             VersionInfo versionInfo = buildVersionInfo(message, lastModified);
@@ -127,11 +152,12 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         String objName = getName(mcrid);
         String message = eventData.getEventType();
         Date lastModified = new Date();
-        try {
-            lastModified = new Date(TimeUnit.SECONDS.toMillis(clXml.lastModified()));
-        } catch (IOException e1) {
-            LOGGER.throwing(Level.ERROR, new MCRException("Cannot Fetch last Modified"));
-        }
+        // try {
+        lastModified = new Date(MCRCategoryDAOFactory.getInstance().getLastModified(mcrid.getRootID()));
+        // lastModified = new Date(TimeUnit.SECONDS.toMillis(clXml.lastModified()));
+        // } catch (IOException e1) {
+        //     LOGGER.throwing(Level.ERROR, new MCRException("Cannot Fetch last Modified"));
+        // }
         VersionInfo versionInfo = buildVersionInfo(message, lastModified);
         getRepository().stageChanges(ObjectVersionId.head(objName), versionInfo, updater -> {
             updater.removeFile(buildFilePath(mcrCg));
@@ -139,25 +165,28 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
     }
 
     public void fileMove(Map<String, Object> data, MCREvent eventData) {
-        MCRCategoryImpl oldParent = (MCRCategoryImpl)data.get("ctg");
-        MCRCategoryImpl newParent = (MCRCategoryImpl)eventData.get("parent");
-        int index = (int)eventData.get("index");
-        MCRCategoryImpl mcrCg = (MCRCategoryImpl)data.get("ctg");
-        fileDelete(mcrCg.getId(), mcrCg, (MCRContent)data.get("xml"), eventData);
+        MCRCategoryImpl oldParent = (MCRCategoryImpl) data.get("ctg");
+        MCRCategoryImpl newParent = (MCRCategoryImpl) eventData.get("parent");
+        int index = (int) eventData.get("index");
+        MCRCategoryImpl mcrCg = (MCRCategoryImpl) data.get("ctg");
+        fileDelete(mcrCg.getId(), mcrCg, (MCRContent) data.get("xml"), eventData);
         mcrCg.setParent(newParent);
-        newParent.getChildren().add(index, mcrCg);
+        List<MCRCategory> children = newParent.getChildren();
+        children.remove(mcrCg);
+        children.add(index, mcrCg);
         MCRContent newParentXml = new MCRJDOMContent(MCRCategoryTransformer.getMetaDataElement(newParent, true));
         MCRContent oldParentXml = new MCRJDOMContent(MCRCategoryTransformer.getMetaDataElement(oldParent, true));
         fileUpdate(newParent.getId(), newParent, newParentXml, eventData);
         fileUpdate(oldParent.getId(), oldParent, oldParentXml, eventData);
     }
 
-    public void commitChanges(MCREvent evt, Date lastModified) {
-        Map<String, Object> data = MCROCFLEventHandler.getEventData(evt, true);
+    public void commitChanges(MCREvent evt/* , Date lastModified */) {
+        Map<String, Object> data = MCROCFLEventHandler.getEventData(evt);
         MCRCategoryID mcrid = (MCRCategoryID) data.get("mid");
         MCRCategory mcrCg = (MCRCategory) data.get("ctg");
         MCRContent rtXml = (MCRContent) data.get("rtx"); // class
         MCREvent event = (MCREvent) evt.get("event");
+        Date lastModified = new Date(MCRCategoryDAOFactory.getInstance().getLastModified(mcrid.getRootID()));
         if (event == null) {
             event = evt;
         }
@@ -169,19 +198,21 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         getRepository().commitStagedChanges(getName(mcrid), versionInfo);
     }
 
+    @DoNotCall
+    @Override
+    public void commitChanges(MCREvent evt, Date lastModified) {
+        commitChanges(evt);
+    }
+
     @SuppressWarnings("unchecked")
     public void commitSession(Optional<MCRSession> sessionOpt) {
         MCRSession session = sessionOpt.orElse(MCRSessionMgr.getCurrentSession());
         ArrayList<MCREvent> list = (ArrayList<MCREvent>) session.get("classQueue");
         HashMap<MCRCategoryID, MCREvent> set = new HashMap<>();
-        
-        // go through the list and call commit on every entry, and let
-        // deduplification handle the rest
-        // list.forEach(this::commitChanges);
-        
+
         // dedup the results here already and only call commit once per object
         list.forEach(evt -> {
-            set.putIfAbsent((MCRCategoryID)evt.get("mid"), evt);
+            set.putIfAbsent((MCRCategoryID) evt.get("mid"), evt);
         });
         set.forEach((id, evt) -> {
             commitChanges(evt);
@@ -191,7 +222,7 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
     }
 
     public void dropChanges(MCREvent evt) {
-        dropChanges(evt, MCROCFLEventHandler.getEventData(evt));
+        dropChanges((MCRCategoryID) MCROCFLEventHandler.getEventData(evt).get("mid"));
     }
 
     public void dropChanges(MCREvent evt, Map<String, Object> data) {
@@ -199,7 +230,7 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         dropChanges(mcrid);
     }
 
-    private void dropChanges(MCRCategoryID mcrid) {
+    public void dropChanges(MCRCategoryID mcrid) {
         if (getRepository().hasStagedChanges(getName(mcrid))) {
             getRepository().purgeStagedChanges(getName(mcrid));
             LOGGER.debug("Dropped changes of {}", getName(mcrid));
@@ -237,6 +268,11 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
 
         if (convertMessageToType(repo.getObject(vId).getVersionInfo().getMessage()) == MCROCFLMetadataVersion.DELETED) {
             throw new MCRUsageException("Cannot read already deleted object '" + objName + "'");
+        }
+
+        if (convertMessageToType(
+            repo.getObject(vId).getVersionInfo().getMessage()) == MCROCFLMetadataVersion.INITIALIZED) {
+            throw new MCRUsageException("'" + objName + "' does not have any content yet");
         }
 
         try (InputStream storedContentStream = repo.getObject(vId).getFile(buildFilePath(mcrid)).getStream()) {

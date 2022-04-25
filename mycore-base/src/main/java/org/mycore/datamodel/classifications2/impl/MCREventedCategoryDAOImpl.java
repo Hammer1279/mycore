@@ -18,16 +18,10 @@
 
 package org.mycore.datamodel.classifications2.impl;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Set;
 
-import javax.persistence.EntityManager;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.mycore.common.MCRSession;
 import org.mycore.common.MCRSessionMgr;
 import org.mycore.common.events.MCREvent;
@@ -42,11 +36,7 @@ import org.mycore.datamodel.classifications2.MCRLabel;
  */
 public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
 
-    private static long LAST_MODIFIED = System.currentTimeMillis();
-
-    private static final Logger LOGGER = LogManager.getLogger();
-
-    private static HashMap<String, Long> LAST_MODIFIED_MAP = new HashMap<>();
+    // private static final Logger LOGGER = LogManager.getLogger();
 
     private static MCREventManager manager = MCREventManager.instance();
 
@@ -63,31 +53,22 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
 
     @Override
     public MCRCategory addCategory(MCRCategoryID parentID, MCRCategory category, int position) {
-        MCRCategory cg = super.addCategory(parentID, category, position);
+        MCRCategory rv = super.addCategory(parentID, category, position);
         MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.CREATE_EVENT);
         evt.put("class", category);
         manager.handleEvent(evt);
         queueForCommit(evt);
-        return cg;
+        return rv;
     }
 
     @Override
     public void deleteCategory(MCRCategoryID id) {
+        // add checks from super, this cannot be called first else all category date is already gone
         MCREvent evt = new MCREvent(MCREvent.CLASS_TYPE, MCREvent.DELETE_EVENT);
         evt.put("class", super.getCategory(id, -1));
-        super.deleteCategory(id);
         manager.handleEvent(evt, MCREventManager.BACKWARD);
         queueForCommit(evt);
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.mycore.datamodel.classifications2.MCRCategoryDAO#exist(org.mycore.datamodel.classifications2.MCRCategoryID)
-     */
-    @Override
-    public boolean exist(MCRCategoryID id) {
-        return super.exist(id);
+        super.deleteCategory(id);
     }
 
     @Override
@@ -106,53 +87,52 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
 
     @Override
     public MCRCategory removeLabel(MCRCategoryID id, String lang) {
-        MCRCategory category = super.removeLabel(id, lang);
+        MCRCategory rv = super.removeLabel(id, lang);
         MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.UPDATE_EVENT);
         evt.put("class", super.getCategory(id, -1));
         manager.handleEvent(evt);
         queueForCommit(evt);
-        return category;
+        return rv;
     }
 
     @Override
     public Collection<MCRCategoryImpl> replaceCategory(MCRCategory newCategory) throws IllegalArgumentException {
-        Collection<MCRCategoryImpl> colList = super.replaceCategory(newCategory);
+        Collection<MCRCategoryImpl> rv = super.replaceCategory(newCategory);
         MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.UPDATE_EVENT);
         evt.put("class", newCategory);
         manager.handleEvent(evt);
         queueForCommit(evt);
-        return colList;
+        return rv;
     }
 
     @Override
     public MCRCategory setLabel(MCRCategoryID id, MCRLabel label) {
-        MCRCategory category = super.setLabel(id, label);
+        MCRCategory rv = super.setLabel(id, label);
         MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.UPDATE_EVENT);
         evt.put("class", super.getCategory(id, -1));
         manager.handleEvent(evt);
         queueForCommit(evt);
-        return category;
+        return rv;
     }
 
     @Override
     public MCRCategory setLabels(MCRCategoryID id, Set<MCRLabel> labels) {
-        MCRCategory category = super.setLabels(id, labels);
+        MCRCategory rv = super.setLabels(id, labels);
         MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.UPDATE_EVENT);
         evt.put("class", super.getCategory(id, -1));
         manager.handleEvent(evt);
         queueForCommit(evt);
-        return category;
+        return rv;
     }
 
-    @Override
-    public MCRCategory setURI(MCRCategoryID id, URI uri) {
-        MCRCategory category = super.setURI(id, uri);
-        MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.UPDATE_EVENT);
-        evt.put("class", super.getCategory(id, -1));
-        manager.handleEvent(evt);
-        queueForCommit(evt);
-        return category;
-    }
+    // @Override
+    // public MCRCategory setURI(MCRCategoryID id, URI uri) {
+    //     MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.UPDATE_EVENT);
+    //     evt.put("class", super.getCategory(id, -1));
+    //     manager.handleEvent(evt);
+    //     queueForCommit(evt);
+    //     return super.setURI(id, uri);
+    // }
 
     // @Override
     // public void repairLeftRightValue(String classID) {
@@ -164,41 +144,14 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
     //     callOnCommit(evt);
     // }
 
-    @Override
-    public long getLastModified() {
-        return LAST_MODIFIED;
-    }
 
-    /**
-     * returns database backed MCRCategoryImpl
-     * 
-     * every change to the returned MCRCategory is reflected in the database.
-     */
-    public static MCRCategoryImpl getByNaturalID(EntityManager entityManager, MCRCategoryID id) {
-        return MCRCategoryDAOImpl.getByNaturalID(entityManager, id);
-    }
-
-    /**
-     * Method updates the last modified timestamp, for the given root id.
-     * 
-     */
-    protected synchronized void updateLastModified(String root) {
-        LAST_MODIFIED_MAP.put(root, System.currentTimeMillis());
-    }
-
-    /**
-     * Gets the timestamp for the given root id. If there is not timestamp at the moment -1 is returned.
-     * 
-     * @return the last modified timestamp (if any) or -1
-     */
-    @Override
-    public long getLastModified(String root) {
-        Long long1 = LAST_MODIFIED_MAP.get(root);
-        if (long1 != null) {
-            return long1;
-        }
-        return -1;
-    }
+    // /**
+    //  * Method updates the last modified timestamp, for the given root id.
+    //  * 
+    //  */
+    // protected synchronized void updateLastModified(String root) {
+    //     LAST_MODIFIED_MAP.put(root, System.currentTimeMillis());
+    // }
 
     protected boolean enQueue = false;
 
@@ -206,6 +159,6 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
     protected void queueForCommit(MCREvent evt) {
         String classQueue = "classQueue";
         MCRSession currentSession = MCRSessionMgr.getCurrentSession();
-        ((ArrayList<MCREvent>)currentSession.get(classQueue)).add(evt);
+        ((ArrayList<MCREvent>) currentSession.get(classQueue)).add(evt);
     }
 }

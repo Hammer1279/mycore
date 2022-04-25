@@ -26,10 +26,12 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.mycore.common.MCRException;
 import org.mycore.common.MCRSession;
 import org.mycore.common.MCRSessionMgr;
 import org.mycore.common.MCRTransactionHelper;
@@ -93,7 +95,20 @@ public class MCROCFLDevCommands {
     public static void readAllClass() throws IOException {
         List<MCRCategoryID> list = MCRCategoryDAOFactory.getInstance().getRootCategoryIDs();
         for (MCRCategoryID cId : list) {
-            readVerClass(cId.getID());
+            LOGGER.debug("Exporting: {}", cId.getRootID());
+            readVerClass(cId.getRootID());
+        }
+        LOGGER.info("Command Run!");
+    }
+
+    @MCRCommand(syntax = "rollback all ocfl classes",
+        help = "roll back all classes to a clean state",
+        order = 2)
+    public static void rollbackAll() throws IOException {
+        List<MCRCategoryID> list = MCRCategoryDAOFactory.getInstance().getRootCategoryIDs();
+        for (MCRCategoryID cId : list) {
+            LOGGER.debug("Rolling '{}' back", cId.getRootID());
+            manager.dropChanges(cId);
         }
         LOGGER.info("Command Run!");
     }
@@ -129,7 +144,7 @@ public class MCROCFLDevCommands {
                 evt.put("class", category);
                 manager.fileUpdate(category.getId(), category,
                     new MCRJDOMContent(MCRCategoryTransformer.getMetaDataDocument(category, true)), evt);
-                    ((ArrayList<MCREvent>)currentSession.get(classQueue)).add(evt);
+                ((ArrayList<MCREvent>) currentSession.get(classQueue)).add(evt);
             });
             LOGGER.info("Staged {} Objects for Update in OCFL Store", list.size());
         } catch (Exception e) {
@@ -145,7 +160,8 @@ public class MCROCFLDevCommands {
                 evt.put("class", category);
                 manager.undoAction(MCROCFLEventHandler.getEventData(evt), evt);
             });
-            LOGGER.error("Error Updating Class Storage:", e);
+            // LOGGER.error("Error Updating Class Storage:", e);
+            throw new MCRException("Error Updating Class Storage:", e);
         }
     }
 }

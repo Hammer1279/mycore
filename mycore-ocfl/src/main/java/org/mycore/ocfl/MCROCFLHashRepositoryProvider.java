@@ -95,7 +95,7 @@ public class MCROCFLHashRepositoryProvider extends MCROCFLRepositoryProvider {
 
     @MCRProperty(name = "mutable", required = false)
     public MCROCFLHashRepositoryProvider setMutable(String bool) {
-        this.mutable = Boolean.getBoolean(bool);
+        this.mutable = Boolean.parseBoolean(bool);
         return this;
     }
 }
