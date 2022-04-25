@@ -51,7 +51,7 @@ public class MCROCFLEventHandler implements MCREventHandler {
     @SuppressWarnings(value = "PMD.SwitchStmtsShouldHaveDefault")
     public void doHandleEvent(MCREvent evt) throws MCRException {
         if (Objects.equals(evt.getObjectType(), MCREvent.CLASS_TYPE)) {
-            Map<String, Object> data = getEventData(evt, true);
+            Map<String, Object> data = getEventData(evt);
             MCRCategoryID mcrid = (MCRCategoryID) data.get("mid");
             MCRCategory mcrCg = (MCRCategory) data.get("ctg");
             MCRContent clXml = (MCRContent) data.get("rtx");

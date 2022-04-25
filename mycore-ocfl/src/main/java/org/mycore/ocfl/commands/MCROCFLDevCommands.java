@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.mycore.common.MCRException;
 import org.mycore.common.MCRSession;
 import org.mycore.common.MCRSessionMgr;
 import org.mycore.common.MCRTransactionHelper;
@@ -100,6 +101,18 @@ public class MCROCFLDevCommands {
         LOGGER.info("Command Run!");
     }
 
+    @MCRCommand(syntax = "rollback all ocfl classes",
+        help = "roll back all classes to a clean state",
+        order = 2)
+    public static void rollbackAll() throws IOException {
+        List<MCRCategoryID> list = MCRCategoryDAOFactory.getInstance().getRootCategoryIDs();
+        for (MCRCategoryID cId : list) {
+            LOGGER.debug("Rolling '{}' back", cId.getRootID());
+            manager.dropChanges(cId);
+        }
+        LOGGER.info("Command Run!");
+    }
+
     private static void createDir(Path dir) throws IOException {
         if (Files.notExists(dir)) {
             Files.createDirectories(dir);
@@ -131,7 +144,7 @@ public class MCROCFLDevCommands {
                 evt.put("class", category);
                 manager.fileUpdate(category.getId(), category,
                     new MCRJDOMContent(MCRCategoryTransformer.getMetaDataDocument(category, true)), evt);
-                    ((ArrayList<MCREvent>)currentSession.get(classQueue)).add(evt);
+                ((ArrayList<MCREvent>) currentSession.get(classQueue)).add(evt);
             });
             LOGGER.info("Staged {} Objects for Update in OCFL Store", list.size());
         } catch (Exception e) {
@@ -147,7 +160,8 @@ public class MCROCFLDevCommands {
                 evt.put("class", category);
                 manager.undoAction(MCROCFLEventHandler.getEventData(evt), evt);
             });
-            LOGGER.error("Error Updating Class Storage:", e);
+            // LOGGER.error("Error Updating Class Storage:", e);
+            throw new MCRException("Error Updating Class Storage:", e);
         }
     }
 }

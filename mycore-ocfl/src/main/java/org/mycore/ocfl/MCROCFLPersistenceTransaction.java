@@ -46,6 +46,8 @@ public class MCROCFLPersistenceTransaction implements MCRPersistenceTransaction 
 
     private boolean rollbackOnly = false;
 
+    private ArrayList<MCREvent> rollbackList;
+
     /**
      * {@inheritDoc}
      */
@@ -53,6 +55,7 @@ public class MCROCFLPersistenceTransaction implements MCRPersistenceTransaction 
     public boolean isReady() {
         // TODO Auto-generated method stub
         LOGGER.debug("TRANSACTION READY CHECK - {}", managerOpt.isPresent());
+        // also check if repository is mutable
         return managerOpt.isPresent() && !isActive();
     }
 
@@ -76,6 +79,7 @@ public class MCROCFLPersistenceTransaction implements MCRPersistenceTransaction 
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("unchecked")
     @Override
     public void commit() {
         // TODO Auto-generated method stub
@@ -88,6 +92,7 @@ public class MCROCFLPersistenceTransaction implements MCRPersistenceTransaction 
             managerOpt.get().commitSession(currentSession);
         } catch (Exception e) {
             rollbackOnly = true;
+            rollbackList = (ArrayList<MCREvent>)currentSession.get("classQueue");
             throw e;
         }
         // active=false;
@@ -96,6 +101,7 @@ public class MCROCFLPersistenceTransaction implements MCRPersistenceTransaction 
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("unchecked")
     @Override
     public void rollback() {
         // TODO Auto-generated method stub
@@ -103,6 +109,9 @@ public class MCROCFLPersistenceTransaction implements MCRPersistenceTransaction 
         LOGGER.debug("TRANSACTION ROLLBACK");
         if (!isActive()) {
             throw new IllegalStateException("TRANSACTION ROLLBACK");
+        }
+        if (rollbackOnly) {
+            ((ArrayList<MCREvent>)currentSession.get("classQueue")).addAll(rollbackList);
         }
         managerOpt.get().rollbackSession(currentSession);
         rollbackOnly = false;
