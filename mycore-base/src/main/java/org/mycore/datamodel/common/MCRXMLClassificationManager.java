@@ -19,7 +19,6 @@
 package org.mycore.datamodel.common;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 
@@ -35,6 +34,8 @@ import org.mycore.datamodel.classifications2.MCRCategoryID;
  * Interface for Native Drive Storage Manager for MyCoRe Classifications
  * @author Tobias Lenhardt [Hammer1279]
  */
+
+
 public interface MCRXMLClassificationManager {
 
     default void fileUpdate(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
@@ -65,11 +66,7 @@ public interface MCRXMLClassificationManager {
         session.deleteObject("classQueue");
     }
 
-    default void commitChanges(MCREvent evt) {
-        commitChanges(evt, new Date());
-    }
-
-    void commitChanges(MCREvent evt, Date lastModified);
+    void commitChanges(MCREvent evt);
 
     default void rollbackSession(MCRSession session) {
         rollbackSession(Optional.ofNullable(session));

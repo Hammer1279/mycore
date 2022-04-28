@@ -26,7 +26,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
@@ -58,12 +57,16 @@ import org.mycore.ocfl.MCROCFLXMLClassificationManager;
 public class MCROCFLDevCommands {
 
     private static final Logger LOGGER = LogManager.getLogger(MCROCFLDevCommands.class);
-
+    
     private static final Path EXPORT_DIR = Path.of(MCRConfiguration2.getStringOrThrow("MCR.savedir"), "class-export");
-
+    
     private static MCRXMLClassificationManager manager = MCRConfiguration2
         .getSingleInstanceOf("MCR.Classification.Manager", MCRXMLClassificationManager.class)
         .orElse(new MCROCFLXMLClassificationManager());
+
+        private MCROCFLDevCommands() {
+        throw new IllegalStateException();
+    }
 
     @MCRCommand(syntax = "export ocfl class {0} rev {1}",
         help = "export ocfl class {0} rev {1}",
