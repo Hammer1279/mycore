@@ -28,8 +28,11 @@ import edu.wisc.library.ocfl.core.OcflRepositoryBuilder;
 import edu.wisc.library.ocfl.core.extension.OcflExtensionRegistry;
 
 /**
+ * Lagacy Mutable Repository Provider
  * @author Tobias Lenhardt [Hammer1279]
+ * @deprecated Use {@link MCROCFLMCRRepositoryProvider#setMutable(String)} instead
  */
+@Deprecated
 public class MCROCFLMutableMCRRepositoryProvider extends MCROCFLMCRRepositoryProvider {
     
     @Override

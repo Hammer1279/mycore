@@ -96,10 +96,7 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         return (MutableOcflRepository) MCROCFLRepositoryProvider.getRepository(repositoryKey);
     }
 
-    protected OcflRepository getUnmutableRepository() {
-        return MCROCFLRepositoryProvider.getRepository(repositoryKey);
-    }
-
+    //TODO: Maybe this package wide?
     protected boolean isMutable() {
         try {
             getRepository();
@@ -111,6 +108,34 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
 
     protected boolean isClean(MCRCategoryID mcrid) {
         return !getRepository().hasStagedChanges(getName(mcrid));
+    }
+
+    public void fileUpdate(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
+        fileUpdate(mcrid, mcrCg, xml, xml, eventData);
+    }
+
+    public void fileDelete(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
+        fileDelete(mcrid, mcrCg, xml, xml, eventData);
+    }
+
+    public void commitSession(MCRSession session) {
+        commitSession(Optional.ofNullable(session));
+    }
+
+    public void rollbackSession(MCRSession session) {
+        rollbackSession(Optional.ofNullable(session));
+    }
+
+    @SuppressWarnings("unchecked")
+    public void rollbackSession(Optional<MCRSession> sessionOpt) {
+        MCRSession session = sessionOpt.orElse(MCRSessionMgr.getCurrentSession());
+        ArrayList<MCREvent> list = (ArrayList<MCREvent>) session.get("classQueue");
+        if (list == null) {
+            LogManager.getLogger(MCRXMLClassificationManager.class).error("List is empty!");
+            return;
+        }
+        list.forEach(this::dropChanges);
+        session.deleteObject("classQueue");
     }
 
     public void fileUpdate(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent clXml, MCRContent cgXml,

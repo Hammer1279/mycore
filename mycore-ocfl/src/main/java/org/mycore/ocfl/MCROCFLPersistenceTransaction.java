@@ -28,7 +28,6 @@ import org.mycore.common.MCRSession;
 import org.mycore.common.MCRSessionMgr;
 import org.mycore.common.config.MCRConfiguration2;
 import org.mycore.common.events.MCREvent;
-import org.mycore.datamodel.common.MCRXMLClassificationManager;
 
 /**
  * @author Tobias Lenhardt [Hammer1279]
@@ -39,14 +38,25 @@ public class MCROCFLPersistenceTransaction implements MCRPersistenceTransaction 
 
     protected MCRSession currentSession;
 
-    protected Optional<MCRXMLClassificationManager> managerOpt = MCRConfiguration2
-        .<MCRXMLClassificationManager>getSingleInstanceOf("MCR.Classification.Manager");
+    protected Optional<MCROCFLXMLClassificationManager> managerOpt;
 
     // private boolean active = false;
 
     private boolean rollbackOnly = false;
 
     private ArrayList<MCREvent> rollbackList;
+
+    public MCROCFLPersistenceTransaction() {
+        //TODO: Improve this
+        try {
+            managerOpt = MCRConfiguration2
+                .<MCROCFLXMLClassificationManager>getSingleInstanceOf("MCR.Classification.Manager");
+        } catch (Exception e) {
+            //TODO: handle exception
+            LOGGER.fatal("Manager is a goner", e);
+            managerOpt = Optional.empty();
+        }
+    }
 
     /**
      * {@inheritDoc}
@@ -55,8 +65,13 @@ public class MCROCFLPersistenceTransaction implements MCRPersistenceTransaction 
     public boolean isReady() {
         // TODO Auto-generated method stub
         LOGGER.debug("TRANSACTION READY CHECK - {}", managerOpt.isPresent());
+        if (!managerOpt.isPresent()) {
+            return false;
+        } else {
+            return !isActive();
+        }
         // also check if repository is mutable
-        return managerOpt.isPresent() && !isActive();
+        // return managerOpt.isPresent() && !isActive();
     }
 
     /**
@@ -86,13 +101,13 @@ public class MCROCFLPersistenceTransaction implements MCRPersistenceTransaction 
         // read from current session what was modified to then call classmanager.commit on it
         LOGGER.debug("TRANSACTION COMMIT");
         if (!isActive() || getRollbackOnly()) {
-            throw new IllegalStateException("TRANSACTION COMMIT");
+            throw new IllegalStateException("TRANSACTION NOT ACTIVE OR ONLY ROLLBACK");
         }
         try {
             managerOpt.get().commitSession(currentSession);
         } catch (Exception e) {
             rollbackOnly = true;
-            rollbackList = (ArrayList<MCREvent>)currentSession.get("classQueue");
+            rollbackList = (ArrayList<MCREvent>) currentSession.get("classQueue");
             throw e;
         }
         // active=false;
@@ -108,10 +123,10 @@ public class MCROCFLPersistenceTransaction implements MCRPersistenceTransaction 
         // read from current session what was modified to then call classmanager.rollback on it
         LOGGER.debug("TRANSACTION ROLLBACK");
         if (!isActive()) {
-            throw new IllegalStateException("TRANSACTION ROLLBACK");
+            throw new IllegalStateException("TRANSACTION NOT ACTIVE");
         }
         if (rollbackOnly) {
-            ((ArrayList<MCREvent>)currentSession.get("classQueue")).addAll(rollbackList);
+            ((ArrayList<MCREvent>) currentSession.get("classQueue")).addAll(rollbackList);
         }
         managerOpt.get().rollbackSession(currentSession);
         rollbackOnly = false;
@@ -126,7 +141,7 @@ public class MCROCFLPersistenceTransaction implements MCRPersistenceTransaction 
         // TODO Auto-generated method stub
         LOGGER.debug("TRANSACTION ROLLBACK CHECK - {}", rollbackOnly);
         if (!isActive()) {
-            throw new IllegalStateException("TRANSACTION ROLLBACK CHECK");
+            throw new IllegalStateException("TRANSACTION NOT ACTIVE");
         }
         return rollbackOnly;
     }

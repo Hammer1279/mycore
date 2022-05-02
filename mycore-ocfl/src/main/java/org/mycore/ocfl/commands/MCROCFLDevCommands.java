@@ -43,7 +43,6 @@ import org.mycore.datamodel.classifications2.MCRCategoryDAOFactory;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
 import org.mycore.datamodel.classifications2.impl.MCRCategoryDAOImpl;
 import org.mycore.datamodel.classifications2.utils.MCRCategoryTransformer;
-import org.mycore.datamodel.common.MCRXMLClassificationManager;
 import org.mycore.frontend.cli.annotation.MCRCommand;
 import org.mycore.frontend.cli.annotation.MCRCommandGroup;
 import org.mycore.ocfl.MCROCFLEventHandler;
@@ -57,14 +56,15 @@ import org.mycore.ocfl.MCROCFLXMLClassificationManager;
 public class MCROCFLDevCommands {
 
     private static final Logger LOGGER = LogManager.getLogger(MCROCFLDevCommands.class);
-    
-    private static final Path EXPORT_DIR = Path.of(MCRConfiguration2.getStringOrThrow("MCR.savedir"), "class-export");
-    
-    private static MCRXMLClassificationManager manager = MCRConfiguration2
-        .getSingleInstanceOf("MCR.Classification.Manager", MCRXMLClassificationManager.class)
-        .orElse(new MCROCFLXMLClassificationManager());
 
-        private MCROCFLDevCommands() {
+    private static final Path EXPORT_DIR = Path.of(MCRConfiguration2.getStringOrThrow("MCR.savedir"), "class-export");
+
+    private static MCROCFLXMLClassificationManager manager = MCRConfiguration2
+        .getSingleInstanceOf("MCR.Classification.Manager", MCROCFLXMLClassificationManager.class)
+        .orElseThrow();
+        // .orElse(new MCROCFLXMLClassificationManager());
+
+    private MCROCFLDevCommands() {
         throw new IllegalStateException();
     }
 
