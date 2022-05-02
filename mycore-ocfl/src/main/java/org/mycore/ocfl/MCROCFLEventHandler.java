@@ -97,7 +97,7 @@ public class MCROCFLEventHandler implements MCREventHandler {
     /**
      * Returns Event Data in form of an Map. This is used to extract the category data from the MyCoRe Event
      * @param evt MCREvent
-     * @return Map:
+     * @return Map &lt;String, Object&gt; :
      * <p>ctg - Category / Classification</p>
      * <p>rtx - Root Document</p>
      * <p>cgx - Category Element</p>
@@ -111,7 +111,7 @@ public class MCROCFLEventHandler implements MCREventHandler {
      * Returns Event Data in form of an Map. This is used to extract the category data from the MyCoRe Event
      * @param evt MCREvent
      * @param counter Append Usage Counters (Resource Intensive)
-     * @return Map:
+     * @return Map &lt;String, Object&gt; :
      * <p>ctg - Category / Classification</p>
      * <p>rtx - Root Document</p>
      * <p>cgx - Category Element</p>
