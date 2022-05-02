@@ -41,7 +41,7 @@ public interface MCRXMLClassificationManager {
 
     /**
      * Load a Classification from the Store
-     * @param MCRCategoryID ID of the Category
+     * @param mcrid ID of the Category
      * @return MCRContent
      */
     default MCRContent retrieveContent(MCRCategoryID mcrid) {
