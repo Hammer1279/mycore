@@ -18,17 +18,7 @@
 
 package org.mycore.datamodel.common;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Map;
-import java.util.Optional;
-
-import org.apache.logging.log4j.LogManager;
-import org.mycore.common.MCRSession;
-import org.mycore.common.MCRSessionMgr;
 import org.mycore.common.content.MCRContent;
-import org.mycore.common.events.MCREvent;
-import org.mycore.datamodel.classifications2.MCRCategory;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
 
 /**
@@ -37,66 +27,20 @@ import org.mycore.datamodel.classifications2.MCRCategoryID;
  */
 public interface MCRXMLClassificationManager {
 
-    default void fileUpdate(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
-        fileUpdate(mcrid, mcrCg, xml, xml, eventData);
-    }
+    // void rollbackSession(Optional<MCRSession> sessionOpt);
 
-    void fileUpdate(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent clXml, MCRContent cgXml,
-        MCREvent eventData);
+    // void commitChanges(MCREvent evt);
 
-    default void fileDelete(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
-        fileDelete(mcrid, mcrCg, xml, xml, eventData);
-    }
-
-    void fileDelete(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent clXml, MCRContent cgXml,
-        MCREvent eventData);
-
-    void fileMove(Map<String, Object> data, MCREvent eventData);
-
-    default void commitSession(MCRSession session) {
-        commitSession(Optional.ofNullable(session));
-    }
-
-    @SuppressWarnings("unchecked")
-    default void commitSession(Optional<MCRSession> sessionOpt) {
-        MCRSession session = sessionOpt.orElse(MCRSessionMgr.getCurrentSession());
-        ArrayList<MCREvent> list = (ArrayList<MCREvent>) session.get("classQueue");
-        list.forEach(this::commitChanges);
-        session.deleteObject("classQueue");
-    }
-
-    default void commitChanges(MCREvent evt) {
-        commitChanges(evt, new Date());
-    }
-
-    void commitChanges(MCREvent evt, Date lastModified);
-
-    default void rollbackSession(MCRSession session) {
-        rollbackSession(Optional.ofNullable(session));
-    }
-
-    @SuppressWarnings("unchecked")
-    default void rollbackSession(Optional<MCRSession> sessionOpt) {
-        MCRSession session = sessionOpt.orElse(MCRSessionMgr.getCurrentSession());
-        ArrayList<MCREvent> list = (ArrayList<MCREvent>) session.get("classQueue");
-        if (list == null) {
-            LogManager.getLogger(MCRXMLClassificationManager.class).error("List is empty!");
-            return;
-        }
-        list.forEach(this::dropChanges);
-        session.deleteObject("classQueue");
-    }
-
-    void dropChanges(MCREvent evt);
-
-    void dropChanges(MCREvent evt, Map<String, Object> data);
-
-    void dropChanges(MCRCategoryID mcrid);
-
-    void undoAction(Map<String, Object> data, MCREvent evt);
+    // @SuppressWarnings("unchecked")
+    // default void commitSession(Optional<MCRSession> sessionOpt) {
+    //     MCRSession session = sessionOpt.orElse(MCRSessionMgr.getCurrentSession());
+    //     ArrayList<MCREvent> list = (ArrayList<MCREvent>) session.get("classQueue");
+    //     list.forEach(this::commitChanges);
+    //     session.deleteObject("classQueue");
+    // }
 
     /**
-     * Load a Classification from the OCFL Store.
+     * Load a Classification from the Store
      * @param MCRCategoryID ID of the Category
      * @return MCRContent
      */
@@ -105,10 +49,10 @@ public interface MCRXMLClassificationManager {
     }
 
     /**
-     * Load a Classification from the OCFL Store.
+     * Load a Classification from the Store
      * @param mcrid ID of the Category
      * @param revision Revision of the Category
-     * @return Content of the Classification
+     * @return MCRContent
      */
     MCRContent retrieveContent(MCRCategoryID mcrid, String revision);
 

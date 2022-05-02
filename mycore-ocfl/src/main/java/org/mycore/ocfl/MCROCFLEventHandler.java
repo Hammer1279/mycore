@@ -34,7 +34,6 @@ import org.mycore.datamodel.classifications2.MCRCategory;
 import org.mycore.datamodel.classifications2.MCRCategoryDAOFactory;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
 import org.mycore.datamodel.classifications2.utils.MCRCategoryTransformer;
-import org.mycore.datamodel.common.MCRXMLClassificationManager;
 
 /**
  * @author Tobias Lenhardt [Hammer1279]
@@ -43,8 +42,8 @@ public class MCROCFLEventHandler implements MCREventHandler {
 
     private static final Logger LOGGER = LogManager.getLogger(MCROCFLEventHandler.class);
 
-    protected MCRXMLClassificationManager manager = MCRConfiguration2
-        .getSingleInstanceOf("MCR.Classification.Manager", MCRXMLClassificationManager.class)
+    protected MCROCFLXMLClassificationManager manager = MCRConfiguration2
+        .getSingleInstanceOf("MCR.Classification.Manager", MCROCFLXMLClassificationManager.class)
         .orElse(new MCROCFLXMLClassificationManager());
 
     @Override

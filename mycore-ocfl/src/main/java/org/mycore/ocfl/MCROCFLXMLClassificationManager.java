@@ -28,11 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
-import com.google.errorprone.annotations.DoNotCall;
-
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jdom2.Document;
@@ -100,10 +96,7 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         return (MutableOcflRepository) MCROCFLRepositoryProvider.getRepository(repositoryKey);
     }
 
-    protected OcflRepository getUnmutableRepository() {
-        return MCROCFLRepositoryProvider.getRepository(repositoryKey);
-    }
-
+    //TODO: Maybe this package wide?
     protected boolean isMutable() {
         try {
             getRepository();
@@ -117,6 +110,34 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         return !getRepository().hasStagedChanges(getName(mcrid));
     }
 
+    public void fileUpdate(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
+        fileUpdate(mcrid, mcrCg, xml, xml, eventData);
+    }
+
+    public void fileDelete(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent xml, MCREvent eventData) {
+        fileDelete(mcrid, mcrCg, xml, xml, eventData);
+    }
+
+    public void commitSession(MCRSession session) {
+        commitSession(Optional.ofNullable(session));
+    }
+
+    public void rollbackSession(MCRSession session) {
+        rollbackSession(Optional.ofNullable(session));
+    }
+
+    @SuppressWarnings("unchecked")
+    public void rollbackSession(Optional<MCRSession> sessionOpt) {
+        MCRSession session = sessionOpt.orElse(MCRSessionMgr.getCurrentSession());
+        ArrayList<MCREvent> list = (ArrayList<MCREvent>) session.get("classQueue");
+        if (list == null) {
+            LogManager.getLogger(MCRXMLClassificationManager.class).error("List is empty!");
+            return;
+        }
+        list.forEach(this::dropChanges);
+        session.deleteObject("classQueue");
+    }
+
     public void fileUpdate(MCRCategoryID mcrid, MCRCategory mcrCg, MCRContent clXml, MCRContent cgXml,
         MCREvent eventData) {
 
@@ -124,12 +145,7 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         String message = eventData.getEventType();
         Date lastModified = new Date();
         MCRContent xml = mcrCg.isClassification() ? clXml : cgXml;
-        // try {
         lastModified = new Date(MCRCategoryDAOFactory.getInstance().getLastModified(mcrid.getRootID()));
-        // lastModified = new Date(TimeUnit.SECONDS.toMillis(xml.lastModified()));
-        // } catch (IOException e1) {
-        //     LOGGER.throwing(Level.ERROR, new MCRException("Cannot Fetch last Modified"));
-        // }
 
         try (InputStream objectAsStream = xml.getInputStream()) {
             VersionInfo versionInfo = buildVersionInfo(message, lastModified);
@@ -152,12 +168,7 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         String objName = getName(mcrid);
         String message = eventData.getEventType();
         Date lastModified = new Date();
-        // try {
         lastModified = new Date(MCRCategoryDAOFactory.getInstance().getLastModified(mcrid.getRootID()));
-        // lastModified = new Date(TimeUnit.SECONDS.toMillis(clXml.lastModified()));
-        // } catch (IOException e1) {
-        //     LOGGER.throwing(Level.ERROR, new MCRException("Cannot Fetch last Modified"));
-        // }
         VersionInfo versionInfo = buildVersionInfo(message, lastModified);
         getRepository().stageChanges(ObjectVersionId.head(objName), versionInfo, updater -> {
             updater.removeFile(buildFilePath(mcrCg));
@@ -180,7 +191,7 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         fileUpdate(oldParent.getId(), oldParent, oldParentXml, eventData);
     }
 
-    public void commitChanges(MCREvent evt/* , Date lastModified */) {
+    public void commitChanges(MCREvent evt) {
         Map<String, Object> data = MCROCFLEventHandler.getEventData(evt);
         MCRCategoryID mcrid = (MCRCategoryID) data.get("mid");
         MCRCategory mcrCg = (MCRCategory) data.get("ctg");
@@ -196,12 +207,6 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         LOGGER.debug("Committing <{}> in Object <{}>", mcrid.getID(), mcrid.getRootID());
         VersionInfo versionInfo = buildVersionInfo(event.getEventType(), lastModified);
         getRepository().commitStagedChanges(getName(mcrid), versionInfo);
-    }
-
-    @DoNotCall
-    @Override
-    public void commitChanges(MCREvent evt, Date lastModified) {
-        commitChanges(evt);
     }
 
     @SuppressWarnings("unchecked")
