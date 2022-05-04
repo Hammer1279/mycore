@@ -23,6 +23,9 @@ import org.mycore.common.config.MCRConfiguration2;
 import edu.wisc.library.ocfl.api.util.Enforce;
 import edu.wisc.library.ocfl.core.extension.OcflExtensionConfig;
 
+/**
+ * @author Tobias Lenhardt [Hammer1279]
+ */
 public class MCRStorageLayoutConfig implements OcflExtensionConfig {
 
     public String extensionName;
