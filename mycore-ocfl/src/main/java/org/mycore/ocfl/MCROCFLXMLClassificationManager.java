@@ -24,7 +24,6 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -213,15 +212,19 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
     public void commitSession(Optional<MCRSession> sessionOpt) {
         MCRSession session = sessionOpt.orElse(MCRSessionMgr.getCurrentSession());
         ArrayList<MCREvent> list = (ArrayList<MCREvent>) session.get("classQueue");
-        HashMap<MCRCategoryID, MCREvent> set = new HashMap<>();
 
-        // dedup the results here already and only call commit once per object
-        list.forEach(evt -> {
-            set.putIfAbsent((MCRCategoryID) evt.get("mid"), evt);
-        });
-        set.forEach((id, evt) -> {
-            commitChanges(evt);
-        });
+        // queue all changes to be committed
+        list.forEach(this::commitChanges);
+
+        // HashMap<MCRCategoryID, MCREvent> set = new HashMap<>();
+
+        // // dedup the results here already and only call commit once per object
+        // list.forEach(evt -> {
+        //     set.putIfAbsent((MCRCategoryID) evt.get("mid"), evt);
+        // });
+        // set.forEach((id, evt) -> {
+        //     commitChanges(evt);
+        // });
 
         session.deleteObject("classQueue");
     }
