@@ -68,7 +68,7 @@ public class MCROCFLPersistenceTransaction implements MCRPersistenceTransaction 
         if (!managerOpt.isPresent()) {
             return false;
         } else {
-            return !isActive();
+            return !isActive() && managerOpt.get().isMutable();
         }
         // also check if repository is mutable
         // return managerOpt.isPresent() && !isActive();
@@ -125,8 +125,12 @@ public class MCROCFLPersistenceTransaction implements MCRPersistenceTransaction 
         if (!isActive()) {
             throw new IllegalStateException("TRANSACTION NOT ACTIVE");
         }
-        if (rollbackOnly) {
-            ((ArrayList<MCREvent>) currentSession.get("classQueue")).addAll(rollbackList);
+        try {
+            if (rollbackOnly) {
+                ((ArrayList<MCREvent>) currentSession.get("classQueue")).addAll(rollbackList);
+            }
+        } catch (Exception e) {
+            currentSession.put("classQueue", rollbackList);
         }
         managerOpt.get().rollbackSession(currentSession);
         rollbackOnly = false;
