@@ -56,11 +56,6 @@ public class MCROCFLEventHandler implements MCREventHandler {
             MCRContent clXml = (MCRContent) data.get("rtx");
             MCRContent cgXml = (MCRContent) data.get("cgx");
             LOGGER.debug("{} handling {} {}", getClass().getName(), mcrid, evt.getEventType());
-            LOGGER.debug("\n\nCLASS:\nID: {}\nRootID: {}\n", ((MCRCategory) evt.get("class")).getId(),
-                ((MCRCategory) evt.get("class")).getRoot().getId());
-            LOGGER.debug("\n\nID-{} is:\nRoot: {}\nRootID: {}\n", mcrid.getID(), mcrid.isRootID(), mcrid.getRootID());
-            LOGGER.debug("\n\nCG-{} is:\nClass: {}\nCateg: {}\n", mcrCg.getId(), mcrCg.isClassification(),
-                mcrCg.isCategory());
             switch (evt.getEventType()) {
                 case MCREvent.CREATE_EVENT:
                 case MCREvent.UPDATE_EVENT:
@@ -76,8 +71,6 @@ public class MCROCFLEventHandler implements MCREventHandler {
                     break;
                 case MCREvent.DELETE_EVENT:
                     manager.fileDelete(mcrid, mcrCg, clXml, cgXml, evt);
-                    break;
-                case MCREvent.REPAIR_EVENT:
                     break;
                 default:
                     LOGGER.error("No Method available for {}", evt.getEventType());

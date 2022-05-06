@@ -62,7 +62,6 @@ public class MCROCFLDevCommands {
     private static MCROCFLXMLClassificationManager manager = MCRConfiguration2
         .getSingleInstanceOf("MCR.Classification.Manager", MCROCFLXMLClassificationManager.class)
         .orElseThrow();
-        // .orElse(new MCROCFLXMLClassificationManager());
 
     private MCROCFLDevCommands() {
         throw new IllegalStateException();
@@ -76,7 +75,7 @@ public class MCROCFLDevCommands {
         createDir(EXPORT_DIR);
         Files.write(Path.of(EXPORT_DIR.toString(), mclass + ".xml"), content.asByteArray(), StandardOpenOption.CREATE,
             StandardOpenOption.TRUNCATE_EXISTING);
-        LOGGER.info("Command Run!");
+        LOGGER.info("Exported Class <{}> with Revision <{}> to <{}>", mclass, rev, EXPORT_DIR.toString());
 
     }
 
@@ -88,7 +87,7 @@ public class MCROCFLDevCommands {
         createDir(EXPORT_DIR);
         Files.write(Path.of(EXPORT_DIR.toString(), mclass + ".xml"), content.asByteArray(), StandardOpenOption.CREATE,
             StandardOpenOption.TRUNCATE_EXISTING);
-        LOGGER.info("Command Run!");
+        LOGGER.info("Exported Class <{}> to <{}>", mclass, EXPORT_DIR.toString());
 
     }
 
@@ -101,11 +100,11 @@ public class MCROCFLDevCommands {
             LOGGER.debug("Exporting: {}", cId.getRootID());
             readVerClass(cId.getRootID());
         }
-        LOGGER.info("Command Run!");
+        LOGGER.info("Exported all Classes!");
     }
 
     @MCRCommand(syntax = "rollback all ocfl classes",
-        help = "roll back all classes to a clean state",
+        help = "roll back all classes in the ocfl store to a clean state",
         order = 2)
     public static void rollbackAll() throws IOException {
         List<MCRCategoryID> list = MCRCategoryDAOFactory.getInstance().getRootCategoryIDs();
@@ -113,7 +112,7 @@ public class MCROCFLDevCommands {
             LOGGER.debug("Rolling '{}' back", cId.getRootID());
             manager.dropChanges(cId);
         }
-        LOGGER.info("Command Run!");
+        LOGGER.info("Dropped all Staged changes.");
     }
 
     private static void createDir(Path dir) throws IOException {
@@ -124,7 +123,7 @@ public class MCROCFLDevCommands {
 
     @SuppressWarnings("unchecked")
     @MCRCommand(syntax = "rebuild ocfl class store",
-        help = "Clear the OCFL Store Classifications and reload them from the Database\nTHIS WILL DELETE ALL DATA",
+        help = "Clear the OCFL Store Classifications and reload them from the Database\nTHIS WILL WIPE THE PREVIOUS OCFL CLASS STORE",
         order = 2)
     public static void rebuildClassStore() throws IOException {
         String repositoryKey = MCRConfiguration2.getStringOrThrow("MCR.Classification.Manager.Repository");
@@ -135,7 +134,7 @@ public class MCROCFLDevCommands {
             walker.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
         } catch (Exception e) {
             // throw new IOException(e);
-            // expected Error incase the directory doesn't exist
+            // expected Error incase the directory doesn't exist yet
         }
         List<MCRCategoryID> list = new MCRCategoryDAOImpl().getRootCategoryIDs();
         try {
@@ -151,7 +150,7 @@ public class MCROCFLDevCommands {
             });
             LOGGER.info("Staged {} Objects for Update in OCFL Store", list.size());
         } catch (Exception e) {
-            LOGGER.error("Error occured, rolling back...");
+            LOGGER.error("Error occurred, rolling back...");
             try {
                 MCRTransactionHelper.rollbackTransaction();
             } catch (Exception err) {
@@ -163,6 +162,8 @@ public class MCROCFLDevCommands {
                 evt.put("class", category);
                 manager.undoAction(MCROCFLEventHandler.getEventData(evt), evt);
             });
+            // Logging only would be better since the rollback has already occurred,
+            // however MyCoRe would show it was successfully, which it certainly was not
             // LOGGER.error("Error Updating Class Storage:", e);
             throw new MCRException("Error Updating Class Storage:", e);
         }

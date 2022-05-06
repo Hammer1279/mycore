@@ -69,8 +69,7 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
     protected static final String CLASSIFICATION_PREFIX = "mcrclass:";
 
     // include the "/classification" directory
-    // private static final boolean INC_CLSDIR = false;
-    private static final boolean INC_CLSDIR = MCRConfiguration2.getBoolean("MCR.OCFL.UseClassSubDir").orElse(false);
+    private static final boolean INC_CLSDIR = MCRConfiguration2.getBoolean("MCR.OCFL.CM.UseClassSubDir").orElse(false);
 
     private String rootFolder = INC_CLSDIR ? "classification/" : "";
 
@@ -95,7 +94,6 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         return (MutableOcflRepository) MCROCFLRepositoryProvider.getRepository(repositoryKey);
     }
 
-    //TODO: Maybe this package wide?
     protected boolean isMutable() {
         try {
             getRepository();
@@ -212,20 +210,7 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
     public void commitSession(Optional<MCRSession> sessionOpt) {
         MCRSession session = sessionOpt.orElse(MCRSessionMgr.getCurrentSession());
         ArrayList<MCREvent> list = (ArrayList<MCREvent>) session.get("classQueue");
-
-        // queue all changes to be committed
         list.forEach(this::commitChanges);
-
-        // HashMap<MCRCategoryID, MCREvent> set = new HashMap<>();
-
-        // // dedup the results here already and only call commit once per object
-        // list.forEach(evt -> {
-        //     set.putIfAbsent((MCRCategoryID) evt.get("mid"), evt);
-        // });
-        // set.forEach((id, evt) -> {
-        //     commitChanges(evt);
-        // });
-
         session.deleteObject("classQueue");
     }
 

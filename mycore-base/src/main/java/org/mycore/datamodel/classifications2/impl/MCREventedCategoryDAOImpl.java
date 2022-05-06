@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 
-
+import org.mycore.common.MCRPersistenceException;
 import org.mycore.common.MCRSession;
 import org.mycore.common.MCRSessionMgr;
 import org.mycore.common.events.MCREvent;
@@ -37,20 +37,9 @@ import org.mycore.datamodel.classifications2.MCRLabel;
  */
 public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
 
-    // private static final Logger LOGGER = LogManager.getLogger();
-
     private static MCREventManager manager = MCREventManager.instance();
 
     private static final String EVENT_OBJECT = MCREvent.CLASS_TYPE;
-
-    @Override
-    public MCRCategory addCategory(MCRCategoryID parentID, MCRCategory category) {
-        int position = -1;
-        if (category instanceof MCRCategoryImpl) {
-            position = ((MCRCategoryImpl) category).getPositionInParent();
-        }
-        return addCategory(parentID, category, position);
-    }
 
     @Override
     public MCRCategory addCategory(MCRCategoryID parentID, MCRCategory category, int position) {
@@ -64,9 +53,12 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
 
     @Override
     public void deleteCategory(MCRCategoryID id) {
-        // add checks from super, this cannot be called first else all category date is already gone
+        MCRCategory category = super.getCategory(id, -1);
+        if (category == null) {
+            throw new MCRPersistenceException("Category " + id + " was not found. Delete aborted.");
+        }
         MCREvent evt = new MCREvent(MCREvent.CLASS_TYPE, MCREvent.DELETE_EVENT);
-        evt.put("class", super.getCategory(id, -1));
+        evt.put("class", category);
         manager.handleEvent(evt, MCREventManager.BACKWARD);
         queueForCommit(evt);
         super.deleteCategory(id);
@@ -74,7 +66,7 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
 
     @Override
     public void moveCategory(MCRCategoryID id, MCRCategoryID newParentID, int index) {
-        // duplicates the class to move - should be fixed, check it again
+        // FIXME duplicates the class to move - should be fixed, need to check it again
         MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.UPDATE_EVENT);
         evt.put("class", super.getCategory(id, -1));
         evt.put("parent", super.getCategory(newParentID, -1));
@@ -126,36 +118,6 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
         queueForCommit(evt);
         return rv;
     }
-
-    // @Override
-    // public MCRCategory setURI(MCRCategoryID id, URI uri) {
-    //     MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.UPDATE_EVENT);
-    //     evt.put("class", super.getCategory(id, -1));
-    //     manager.handleEvent(evt);
-    //     queueForCommit(evt);
-    //     return super.setURI(id, uri);
-    // }
-
-    // @Override
-    // public void repairLeftRightValue(String classID) {
-    //     final MCRCategoryID rootID = MCRCategoryID.rootID(classID);
-    //     super.repairLeftRightValue(classID);
-    //     MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.UPDATE_EVENT);
-    //     evt.put("class", super.getCategory(rootID, -1));
-    //     manager.handleEvent(evt);
-    //     callOnCommit(evt);
-    // }
-
-
-    // /**
-    //  * Method updates the last modified timestamp, for the given root id.
-    //  * 
-    //  */
-    // protected synchronized void updateLastModified(String root) {
-    //     LAST_MODIFIED_MAP.put(root, System.currentTimeMillis());
-    // }
-
-    protected boolean enQueue = false;
 
     @SuppressWarnings("unchecked")
     protected void queueForCommit(MCREvent evt) {
