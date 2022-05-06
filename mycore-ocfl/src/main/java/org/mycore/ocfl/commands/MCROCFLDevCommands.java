@@ -123,7 +123,7 @@ public class MCROCFLDevCommands {
 
     @SuppressWarnings("unchecked")
     @MCRCommand(syntax = "rebuild ocfl class store",
-        help = "Clear the OCFL Store Classifications and reload them from the Database\nTHIS WILL WIPE THE PREVIOUS OCFL CLASS STORE",
+        help = "Clear the OCFL Store Classifications and reload them from the Database\nWILL WIPE MCRCLASS FOLDER",
         order = 2)
     public static void rebuildClassStore() throws IOException {
         String repositoryKey = MCRConfiguration2.getStringOrThrow("MCR.Classification.Manager.Repository");
