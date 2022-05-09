@@ -42,6 +42,8 @@ public class MCROCFLEventHandler implements MCREventHandler {
 
     private static final Logger LOGGER = LogManager.getLogger(MCROCFLEventHandler.class);
 
+    private static final boolean USE_COUNTER = MCRConfiguration2.getBoolean("MCR.OCFL.Classification.Counter").orElse(false);
+
     protected MCROCFLXMLClassificationManager manager = MCRConfiguration2
         .getSingleInstanceOf("MCR.Classification.Manager", MCROCFLXMLClassificationManager.class)
         .orElse(new MCROCFLXMLClassificationManager());
@@ -97,7 +99,7 @@ public class MCROCFLEventHandler implements MCREventHandler {
      * <p>mid - MyCoRe ID</p>
      */
     public static final Map<String, Object> getEventData(MCREvent evt) {
-        return getEventData(evt, false);
+        return getEventData(evt, USE_COUNTER);
     }
 
     /**

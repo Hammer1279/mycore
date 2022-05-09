@@ -66,7 +66,6 @@ public class MCREventedCategoryDAOImpl extends MCRCategoryDAOImpl {
 
     @Override
     public void moveCategory(MCRCategoryID id, MCRCategoryID newParentID, int index) {
-        // FIXME duplicates the class to move - should be fixed, need to check it again
         MCREvent evt = new MCREvent(EVENT_OBJECT, MCREvent.UPDATE_EVENT);
         evt.put("class", super.getCategory(id, -1));
         evt.put("parent", super.getCategory(newParentID, -1));

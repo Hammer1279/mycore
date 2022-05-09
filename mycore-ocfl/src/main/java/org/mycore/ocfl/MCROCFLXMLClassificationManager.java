@@ -70,6 +70,8 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
 
     // include the "/classification" directory
     private static final boolean INC_CLSDIR = MCRConfiguration2.getBoolean("MCR.OCFL.CM.UseClassSubDir").orElse(false);
+    
+    private static final boolean USE_COUNTER = MCRConfiguration2.getBoolean("MCR.OCFL.Classification.Counter").orElse(false);
 
     private String rootFolder = INC_CLSDIR ? "classification/" : "";
 
@@ -182,8 +184,8 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         List<MCRCategory> children = newParent.getChildren();
         children.remove(mcrCg);
         children.add(index, mcrCg);
-        MCRContent newParentXml = new MCRJDOMContent(MCRCategoryTransformer.getMetaDataElement(newParent, true));
-        MCRContent oldParentXml = new MCRJDOMContent(MCRCategoryTransformer.getMetaDataElement(oldParent, true));
+        MCRContent newParentXml = new MCRJDOMContent(MCRCategoryTransformer.getMetaDataElement(newParent, USE_COUNTER));
+        MCRContent oldParentXml = new MCRJDOMContent(MCRCategoryTransformer.getMetaDataElement(oldParent, USE_COUNTER));
         fileUpdate(newParent.getId(), newParent, newParentXml, eventData);
         fileUpdate(oldParent.getId(), oldParent, oldParentXml, eventData);
     }
