@@ -42,7 +42,8 @@ public class MCROCFLEventHandler implements MCREventHandler {
 
     private static final Logger LOGGER = LogManager.getLogger(MCROCFLEventHandler.class);
 
-    private static final boolean USE_COUNTER = MCRConfiguration2.getBoolean("MCR.OCFL.Classification.Counter").orElse(false);
+    private static final boolean USE_COUNTER = MCRConfiguration2.getBoolean("MCR.OCFL.Classification.Counter")
+        .orElse(false);
 
     protected MCROCFLXMLClassificationManager manager = MCRConfiguration2
         .getSingleInstanceOf("MCR.Classification.Manager", MCROCFLXMLClassificationManager.class)
@@ -64,10 +65,10 @@ public class MCROCFLEventHandler implements MCREventHandler {
                     if (!evt.containsKey("type")) {
                         manager.fileUpdate(mcrid, mcrCg, clXml, cgXml, evt);
                     } else {
-                        switch ((String)evt.get("type")) {
+                        switch ((String) evt.get("type")) {
                             case "move":
                                 manager.fileMove(data, evt);
-                            break;
+                                break;
                         }
                     }
                     break;

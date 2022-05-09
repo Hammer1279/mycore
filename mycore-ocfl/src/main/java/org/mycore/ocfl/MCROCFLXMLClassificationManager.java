@@ -70,8 +70,9 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
 
     // include the "/classification" directory
     private static final boolean INC_CLSDIR = MCRConfiguration2.getBoolean("MCR.OCFL.CM.UseClassSubDir").orElse(false);
-    
-    private static final boolean USE_COUNTER = MCRConfiguration2.getBoolean("MCR.OCFL.Classification.Counter").orElse(false);
+
+    private static final boolean USE_COUNTER = MCRConfiguration2.getBoolean("MCR.OCFL.Classification.Counter")
+        .orElse(false);
 
     private String rootFolder = INC_CLSDIR ? "classification/" : "";
 
