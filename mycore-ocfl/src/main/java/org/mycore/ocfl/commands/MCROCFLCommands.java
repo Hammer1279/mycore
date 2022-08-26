@@ -36,6 +36,9 @@ import org.mycore.ocfl.MCROCFLObjectIDPrefixHelper;
 import org.mycore.ocfl.MCROCFLPersistenceTransaction;
 import org.mycore.ocfl.MCROCFLRepositoryProvider;
 import org.mycore.ocfl.MCROCFLXMLClassificationManager;
+import org.mycore.ocfl.user.MCROCFLXMLUserManager;
+import org.mycore.user2.MCRUser;
+import org.mycore.user2.MCRUserManager;
 
 import edu.wisc.library.ocfl.api.OcflRepository;
 
@@ -121,6 +124,45 @@ public class MCROCFLCommands {
         return commands;
     }
 
+    @MCRCommand(syntax = "update ocfl users",
+        help = "Update all users in the OCFL store from database")
+    public static List<String> updateOCFLUsers() {
+        List<MCRUser> list = MCRUserManager.listUsers("*", null, null, null);
+        // list.forEach(user -> LOGGER.debug("Found: {}", user.getUserID()));
+        
+        return list.stream()
+            .map(usr -> "update ocfl user " + usr.getUserID())
+            .collect(Collectors.toList());
+    }
+
+    @MCRCommand(syntax = "update ocfl user {0}",
+        help = "Update user {0} in the OCFL Store from database")
+    public static void updateOCFLUser(String userId) {
+        // TODO add exist check
+        new MCROCFLXMLUserManager(MCRConfiguration2.getStringOrThrow("MCR.Users.Manager.Repository"))
+            .updateUser(MCRUserManager.getUser(userId));
+    }
+
+    @MCRCommand(syntax = "delete ocfl user {0}",
+        help = "Delete user {0} in the OCFL Store")
+    public static void deleteOCFLUser(String userId) {
+        // TODO add exist check
+        new MCROCFLXMLUserManager(MCRConfiguration2.getStringOrThrow("MCR.Users.Manager.Repository"))
+            .deleteUser(MCRUserManager.getUser(userId));
+    }
+
+    @MCRCommand(syntax = "sync ocfl users",
+        help = "TBD") // TODO fix description
+    public static List<String> syncUserRepository() {
+        List<String> commands = new ArrayList<>();
+        commands.add("update ocfl users");
+        List<String> outOfSync = getStaleOCFLUserIDs();
+        commands.addAll(
+            outOfSync.stream()
+                .map(id -> "delete ocfl user " + id).collect(Collectors.toList()));
+        return commands;
+    }
+
     private static List<String> getStaleOCFLClassificationIDs() {
         String repositoryKey = MCRConfiguration2.getStringOrThrow("MCR.Classification.Manager.Repository");
         List<String> classDAOList = new MCRCategoryDAOImpl().getRootCategoryIDs().stream()
@@ -133,6 +175,21 @@ public class MCROCFLCommands {
                 .getHeadVersion().getVersionInfo().getMessage()))
             .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.CLASSIFICATION, ""))
             .filter(Predicate.not(classDAOList::contains))
+            .collect(Collectors.toList());
+    }
+
+    private static List<String> getStaleOCFLUserIDs() {
+        String repositoryKey = MCRConfiguration2.getStringOrThrow("MCR.Users.Manager.Repository");
+        List<String> userEMList = MCRUserManager.listUsers("*", null, null, null).stream()
+            .map(MCRUser::toString)
+            .collect(Collectors.toList());
+        OcflRepository repository = MCROCFLRepositoryProvider.getRepository(repositoryKey);
+        return repository.listObjectIds()
+            .filter(obj -> obj.startsWith(MCROCFLObjectIDPrefixHelper.USER))
+            .filter(obj -> !MCROCFLXMLUserManager.MESSAGE_DELETED.equals(repository.describeObject(obj)
+                .getHeadVersion().getVersionInfo().getMessage()))
+            .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.USER, ""))
+            .filter(Predicate.not(userEMList::contains))
             .collect(Collectors.toList());
     }
 }

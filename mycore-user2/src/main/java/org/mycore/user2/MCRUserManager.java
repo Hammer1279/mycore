@@ -40,6 +40,8 @@ import org.mycore.common.MCRSystemUserInformation;
 import org.mycore.common.MCRUserInformation;
 import org.mycore.common.MCRUtils;
 import org.mycore.common.config.MCRConfiguration2;
+import org.mycore.common.events.MCREvent;
+import org.mycore.common.events.MCREventManager;
 import org.mycore.common.xml.MCRXMLFunctions;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
 import org.mycore.datamodel.common.MCRISO8601Format;
@@ -215,6 +217,10 @@ public class MCRUserManager {
             return;
         }
 
+        MCREvent evt = new MCREvent(MCREvent.USER_TYPE, MCREvent.CREATE_EVENT);
+        evt.put(MCREvent.USER_KEY, user);
+        MCREventManager.instance().handleEvent(evt);
+
         EntityManager em = MCREntityManagerProvider.getCurrentEntityManager();
         em.persist(user);
         LOGGER.info(() -> "user saved: " + user.getUserID());
@@ -267,6 +273,12 @@ public class MCRUserManager {
         }
         inDb.ifPresent(db -> {
             user.internalID = db.internalID;
+
+            MCREvent evt = new MCREvent(MCREvent.USER_TYPE, MCREvent.UPDATE_EVENT);
+            // evt.put(MCREvent.USER_OLD_KEY, db.clone());
+            evt.put(MCREvent.USER_KEY, user);
+            MCREventManager.instance().handleEvent(evt);
+
             em.detach(db);
             em.merge(user);
             MCRRoleManager.unassignRoles(user);
@@ -306,6 +318,11 @@ public class MCRUserManager {
      */
     public static void deleteUser(String userName, String realmId) {
         MCRUser user = getUser(userName, realmId);
+
+        MCREvent evt = new MCREvent(MCREvent.USER_TYPE, MCREvent.UPDATE_EVENT);
+        evt.put(MCREvent.USER_KEY, user);
+        MCREventManager.instance().handleEvent(evt);
+
         MCRRoleManager.unassignRoles(user);
         EntityManager em = MCREntityManagerProvider.getCurrentEntityManager();
         em.remove(user);
