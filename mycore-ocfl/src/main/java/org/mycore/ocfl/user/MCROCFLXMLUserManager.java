@@ -26,9 +26,12 @@ import java.util.Date;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.mycore.common.MCRPersistenceException;
+import org.mycore.common.MCRSystemUserInformation;
+import org.mycore.common.MCRUsageException;
 import org.mycore.common.content.MCRJAXBContent;
 import org.mycore.ocfl.MCROCFLObjectIDPrefixHelper;
 import org.mycore.ocfl.MCROCFLRepositoryProvider;
+import org.mycore.user2.MCRTransientUser;
 import org.mycore.user2.MCRUser;
 import org.mycore.user2.MCRUserManager;
 import org.mycore.user2.utils.MCRUserTransformer;
@@ -64,8 +67,17 @@ public class MCROCFLXMLUserManager {
         MCRUser currentUser = MCRUserManager.getCurrentUser();
         String ocflUserID = MCROCFLObjectIDPrefixHelper.USER + user.getUserID();
 
+        if (MCRSystemUserInformation.getGuestInstance().getUserID().equals(currentUser.getUserID())) {
+            LOGGER.debug("----------Login Detected----------");
+            return;
+        }
+
+        if (user instanceof MCRTransientUser) {
+            return;
+        }
+
         if (!exists(ocflUserID)) {
-            createUser(currentUser);
+            createUser(user);
         }
 
         VersionInfo info = new VersionInfo() // FIXME show current not modified user
@@ -91,11 +103,15 @@ public class MCROCFLXMLUserManager {
     public void createUser(MCRUser user) {
         // TODO add already created check
 
+        if (user instanceof MCRTransientUser) {
+            return;
+        }
+
         MCRUser currentUser = MCRUserManager.getCurrentUser();
         String ocflUserID = MCROCFLObjectIDPrefixHelper.USER + user.getUserID();
 
         if (exists(ocflUserID)) {
-            
+            throw new MCRUsageException("The User '" + user.getUserID() + "' already exists in OCFL Repository");
         }
 
         VersionInfo info = new VersionInfo() // FIXME show current not modified user
@@ -115,6 +131,10 @@ public class MCROCFLXMLUserManager {
 
     public void deleteUser(MCRUser user) {
         // TODO add existing and not deleted check
+
+        if (user instanceof MCRTransientUser) {
+            return;
+        }
 
         MCRUser currentUser = MCRUserManager.getCurrentUser();
         String ocflUserID = MCROCFLObjectIDPrefixHelper.USER + user.getUserID();

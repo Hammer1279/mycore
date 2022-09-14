@@ -217,13 +217,13 @@ public class MCRUserManager {
             return;
         }
 
-        MCREvent evt = new MCREvent(MCREvent.USER_TYPE, MCREvent.CREATE_EVENT);
-        evt.put(MCREvent.USER_KEY, user);
-        MCREventManager.instance().handleEvent(evt);
 
         EntityManager em = MCREntityManagerProvider.getCurrentEntityManager();
         em.persist(user);
         LOGGER.info(() -> "user saved: " + user.getUserID());
+        MCREvent evt = new MCREvent(MCREvent.USER_TYPE, MCREvent.CREATE_EVENT);
+        evt.put(MCREvent.USER_KEY, user);
+        MCREventManager.instance().handleEvent(evt);
         MCRRoleManager.storeRoleAssignments(user);
     }
 
@@ -561,6 +561,7 @@ public class MCRUserManager {
      */
     public static MCRUser login(String userName, String password, List<String> allowedRoles) {
         MCRUser user = checkPassword(userName, password);
+        // MCRUser user = getUser(userName);
         if (user == null) {
             return null;
         }
