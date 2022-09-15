@@ -73,11 +73,13 @@ public class MCROCFLXMLUserManager {
         }
 
         if (user instanceof MCRTransientUser) {
+            LOGGER.debug("----------Got TransientUser, ignoring...----------");
             return;
         }
 
         if (!exists(ocflUserID)) {
             createUser(user);
+            return;
         }
 
         VersionInfo info = new VersionInfo() // FIXME show current not modified user
@@ -104,6 +106,7 @@ public class MCROCFLXMLUserManager {
         // TODO add already created check
 
         if (user instanceof MCRTransientUser) {
+            LOGGER.debug("----------Got TransientUser, ignoring...----------");
             return;
         }
 
@@ -133,11 +136,18 @@ public class MCROCFLXMLUserManager {
         // TODO add existing and not deleted check
 
         if (user instanceof MCRTransientUser) {
+            LOGGER.debug("----------Got TransientUser, ignoring...----------");
             return;
         }
 
         MCRUser currentUser = MCRUserManager.getCurrentUser();
         String ocflUserID = MCROCFLObjectIDPrefixHelper.USER + user.getUserID();
+
+        if (!exists(ocflUserID)) {
+            throw new MCRUsageException(
+                "The User '" + user.getUserID() + "' does not exist or has already been deleted!");
+        }
+
         VersionInfo info = new VersionInfo() // FIXME show current not modified user
             .setMessage(MESSAGE_DELETED)
             .setCreated((new Date()).toInstant().atOffset(ZoneOffset.UTC))
@@ -148,7 +158,7 @@ public class MCROCFLXMLUserManager {
             });
     }
 
-    private boolean exists(String ocflUserID) {
+    boolean exists(String ocflUserID) {
         return repository.containsObject(ocflUserID)
             && !repository.describeVersion(ObjectVersionId.head(ocflUserID)).getVersionInfo().getMessage()
                 .equals(MESSAGE_DELETED);

@@ -217,7 +217,7 @@ public class MCRUserManager {
             return;
         }
 
-
+        
         EntityManager em = MCREntityManagerProvider.getCurrentEntityManager();
         em.persist(user);
         LOGGER.info(() -> "user saved: " + user.getUserID());
@@ -319,7 +319,7 @@ public class MCRUserManager {
     public static void deleteUser(String userName, String realmId) {
         MCRUser user = getUser(userName, realmId);
 
-        MCREvent evt = new MCREvent(MCREvent.USER_TYPE, MCREvent.UPDATE_EVENT);
+        MCREvent evt = new MCREvent(MCREvent.USER_TYPE, MCREvent.DELETE_EVENT);
         evt.put(MCREvent.USER_KEY, user);
         MCREventManager.instance().handleEvent(evt);
 

@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.mycore.common.MCRUsageException;
 import org.mycore.common.config.MCRConfiguration2;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
 import org.mycore.datamodel.classifications2.impl.MCRCategoryDAOImpl;
@@ -69,20 +70,20 @@ public class MCROCFLCommands {
         ArrayList<String> withoutHistory = migration.getWithoutHistory();
 
         LOGGER.info("The migration resulted in \n" +
-            SUCCESS + ": {}, \n" +
+            SUCCESS + ": {} \n" +
+            SUCCESS_BUT_WITHOUT_HISTORY + ": {} \n" +
             FAILED + ": {} \n" +
-            FAILED_AND_NOW_INVALID_STATE + ": {} \n" +
-            SUCCESS_BUT_WITHOUT_HISTORY + ": {} \n",
+            FAILED_AND_NOW_INVALID_STATE + ": {} \n",
             String.join(", ", success),
             String.join(", ", failed),
             String.join(", ", invalidState),
             String.join(", ", withoutHistory));
 
         LOGGER.info("The migration resulted in \n" +
-            SUCCESS + ": {}, \n" +
+            SUCCESS + ": {} \n" +
+            SUCCESS_BUT_WITHOUT_HISTORY + ": {} \n" +
             FAILED + ": {} \n" +
-            FAILED_AND_NOW_INVALID_STATE + ": {} \n" +
-            SUCCESS_BUT_WITHOUT_HISTORY + ": {} \n",
+            FAILED_AND_NOW_INVALID_STATE + ": {} \n",
             success.size(),
             failed.size(),
             invalidState.size(),
@@ -128,7 +129,6 @@ public class MCROCFLCommands {
         help = "Update all users in the OCFL store from database")
     public static List<String> updateOCFLUsers() {
         List<MCRUser> list = MCRUserManager.listUsers("*", null, null, null);
-        // list.forEach(user -> LOGGER.debug("Found: {}", user.getUserID()));
         
         return list.stream()
             .map(usr -> "update ocfl user " + usr.getUserID())
@@ -139,6 +139,9 @@ public class MCROCFLCommands {
         help = "Update user {0} in the OCFL Store from database")
     public static void updateOCFLUser(String userId) {
         // TODO add exist check
+        if (MCRUserManager.getUser(userId) == null) {
+            throw new MCRUsageException("The User '" + userId + "' does not exist!");
+        }
         new MCROCFLXMLUserManager(MCRConfiguration2.getStringOrThrow("MCR.Users.Manager.Repository"))
             .updateUser(MCRUserManager.getUser(userId));
     }
@@ -147,12 +150,15 @@ public class MCROCFLCommands {
         help = "Delete user {0} in the OCFL Store")
     public static void deleteOCFLUser(String userId) {
         // TODO add exist check
+        if (MCRUserManager.getUser(userId) == null) {
+            throw new MCRUsageException("The User '" + userId + "'' does not exist!");
+        }
         new MCROCFLXMLUserManager(MCRConfiguration2.getStringOrThrow("MCR.Users.Manager.Repository"))
             .deleteUser(MCRUserManager.getUser(userId));
     }
 
     @MCRCommand(syntax = "sync ocfl users",
-        help = "TBD") // TODO fix description
+        help = "Update all users and remove deleted users to resync OCFL Store to the Database")
     public static List<String> syncUserRepository() {
         List<String> commands = new ArrayList<>();
         commands.add("update ocfl users");
