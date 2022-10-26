@@ -16,7 +16,7 @@
  * along with MyCoRe.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.mycore.ocfl;
+package org.mycore.ocfl.classification;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,6 +35,9 @@ import org.mycore.common.content.MCRJDOMContent;
 import org.mycore.common.content.MCRStreamContent;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
 import org.mycore.datamodel.common.MCRXMLClassificationManager;
+import org.mycore.ocfl.repository.MCROCFLRepositoryProvider;
+import org.mycore.ocfl.util.MCROCFLMetadataVersion;
+import org.mycore.ocfl.util.MCROCFLObjectIDPrefixHelper;
 import org.xml.sax.SAXException;
 
 import edu.wisc.library.ocfl.api.OcflOption;
@@ -61,6 +64,7 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
     @MCRProperty(name = "Repository")
     public String repositoryKey;
 
+    // FIXME make seperate versionhelper
     protected static final Map<String, Character> MESSAGE_TYPE_MAPPING = Map.ofEntries(
         Map.entry(MESSAGE_CREATED, MCROCFLMetadataVersion.CREATED),
         Map.entry(MESSAGE_UPDATED, MCROCFLMetadataVersion.UPDATED),
