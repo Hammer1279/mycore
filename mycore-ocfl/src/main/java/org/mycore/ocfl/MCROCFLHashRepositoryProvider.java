@@ -35,8 +35,8 @@ public class MCROCFLHashRepositoryProvider extends org.mycore.ocfl.repository.MC
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static final String DEP_WARN
-        = "Usage of the toplevel ocfl classes is deprecated and will be removed in future releases, " +
-            "please use 'org.mycore.ocfl.repository.MCROCFLHashRepositoryProvider' instead.";
+        = "\u001B[93m" + "Usage of the toplevel ocfl classes is deprecated and will be removed in future releases, " +
+            "please use 'org.mycore.ocfl.repository.MCROCFLHashRepositoryProvider' instead." + "\u001B[0m";
 
     @Override
     public OcflRepository getRepository() {

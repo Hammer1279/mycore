@@ -36,8 +36,8 @@ public class MCROCFLXMLClassificationManager extends org.mycore.ocfl.classificat
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static final String DEP_WARN
-        = "Usage of the toplevel ocfl classes is deprecated and will be removed in future releases, " +
-            "please use 'org.mycore.ocfl.classification.MCROCFLXMLClassificationManager' instead.";
+        = "\u001B[93m" + "Usage of the toplevel ocfl classes is deprecated and will be removed in future releases, " +
+            "please use 'org.mycore.ocfl.classification.MCROCFLXMLClassificationManager' instead." + "\u001B[0m";
 
     public MCROCFLXMLClassificationManager() {
         LOGGER.warn(DEP_WARN);
@@ -72,5 +72,5 @@ public class MCROCFLXMLClassificationManager extends org.mycore.ocfl.classificat
         LOGGER.warn(DEP_WARN);
         super.update(mcrCg, xml);
     }
-    
+
 }
