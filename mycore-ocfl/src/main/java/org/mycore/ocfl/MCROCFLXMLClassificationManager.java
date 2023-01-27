@@ -62,6 +62,11 @@ public class MCROCFLXMLClassificationManager extends org.mycore.ocfl.classificat
     }
 
     @Override
+    public MCRContent retrieveContent(MCRCategoryID mcrid) throws IOException {
+        LOGGER.warn(DEP_WARN);
+        return super.retrieveContent(mcrid);
+    }
+    @Override
     public MCRContent retrieveContent(MCRCategoryID mcrid, String revision) throws IOException {
         LOGGER.warn(DEP_WARN);
         return super.retrieveContent(mcrid, revision);

@@ -156,10 +156,28 @@ public class MCROCFLXMLMetadataManager extends org.mycore.ocfl.metadata.MCROCFLX
     }
 
     @Override
+    public void update(MCRObjectID mcrid, MCRContent xml, Date lastModified)
+        throws MCRPersistenceException {
+        LOGGER.warn(DEP_WARN);
+        super.update(mcrid, xml, lastModified);
+    }
+    @Override
     public void update(MCRObjectID mcrid, MCRContent xml, Date lastModified, String user)
         throws MCRPersistenceException {
         LOGGER.warn(DEP_WARN);
         super.update(mcrid, xml, lastModified, user);
+    }
+
+    @Override
+    public void create(MCRObjectID mcrid, MCRContent xml, Date lastModified) throws MCRPersistenceException {
+        LOGGER.warn(DEP_WARN);
+        super.create(mcrid, xml, lastModified);
+    }
+
+    @Override
+    public void delete(MCRObjectID mcrid) throws MCRPersistenceException {
+        LOGGER.warn(DEP_WARN);
+        super.delete(mcrid);
     }
 
 }
