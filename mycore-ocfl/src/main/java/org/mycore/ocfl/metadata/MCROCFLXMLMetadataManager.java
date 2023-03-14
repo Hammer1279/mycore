@@ -34,7 +34,9 @@ import java.util.stream.IntStream;
 
 import org.jdom2.Document;
 import org.jdom2.JDOMException;
+import org.mycore.access.MCRAccessManager;
 import org.mycore.common.MCRCache;
+import org.mycore.common.MCRException;
 import org.mycore.common.MCRPersistenceException;
 import org.mycore.common.MCRSession;
 import org.mycore.common.MCRSessionMgr;
@@ -49,6 +51,7 @@ import org.mycore.datamodel.common.MCRXMLMetadataManagerAdapter;
 import org.mycore.datamodel.ifs2.MCRObjectIDDateImpl;
 import org.mycore.datamodel.metadata.MCRObjectID;
 import org.mycore.ocfl.repository.MCROCFLRepositoryProvider;
+import org.mycore.ocfl.util.MCROCFLDeleteUtils;
 import org.mycore.ocfl.util.MCROCFLMetadataVersion;
 import org.mycore.ocfl.util.MCROCFLObjectIDPrefixHelper;
 import org.xml.sax.SAXException;
@@ -135,7 +138,41 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
         delete(mcrid, null, null);
     }
 
+// public void delete(MCRObjectID mcrid, Date date, String user) throws MCRPersistenceException {
+//     String PREFIX = "derivate".equals(mcrid.getTypeId()) ? 
+// MCROCFLObjectIDPrefixHelper.MCRDERIVATE : MCROCFLObjectIDPrefixHelper.MCROBJECT;
+//     if (MCROCFLUtils.doPurgeObject(mcrid, PREFIX)) {
+//         purge(mcrid, date, user, true);
+//     } else {
+//         markDeleted(mcrid, date, user);
+//     }
+// }
+
+// void markDeleted(MCRObjectID mcrid, Date date, String user) throws MCRPersistenceException {
+//     String ocflObjectID = getOCFLObjectID(mcrid);
+//     if (!exists(mcrid)) {
+//         throw new MCRUsageException("Cannot delete nonexistent object '" + ocflObjectID + "'");
+//     }
+//     OcflRepository repo = getRepository();
+//     VersionInfo headVersion = repo.describeObject(ocflObjectID).getHeadVersion().getVersionInfo();
+//     char versionType = convertMessageToType(headVersion.getMessage());
+//     if (versionType == MCROCFLMetadataVersion.DELETED) {
+//         throw new MCRUsageException("Cannot delete already deleted object '" + ocflObjectID + "'");
+//     }
+//     repo.updateObject(ObjectVersionId.head(ocflObjectID), buildVersionInfo(MESSAGE_DELETED, date, null), init -> {
+//         init.removeFile(buildFilePath(mcrid));
+//     });
+// }
+
     public void delete(MCRObjectID mcrid, Date date, String user) throws MCRPersistenceException {
+        String prefix = "derivate".equals(mcrid.getTypeId()) ? MCROCFLObjectIDPrefixHelper.MCRDERIVATE
+            : MCROCFLObjectIDPrefixHelper.MCROBJECT;
+
+        if (MCROCFLDeleteUtils.doPurgeObject(mcrid, prefix)) {
+            purge(mcrid, date, user, true);
+            return;
+        }
+
         String ocflObjectID = getOCFLObjectID(mcrid);
         if (!exists(mcrid)) {
             throw new MCRUsageException("Cannot delete nonexistent object '" + ocflObjectID + "'");
@@ -149,6 +186,23 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
         repo.updateObject(ObjectVersionId.head(ocflObjectID), buildVersionInfo(MESSAGE_DELETED, date, null), init -> {
             init.removeFile(buildFilePath(mcrid));
         });
+    }
+
+    public void purge(MCRObjectID mcrid, Date date, String user, boolean skipPermCheck) {
+        String ocflObjectID = getOCFLObjectID(mcrid);
+        if (!exists(mcrid)) {
+            throw new MCRUsageException("Cannot delete nonexistent object '" + ocflObjectID + "'");
+        }
+
+        if (!skipPermCheck && !MCRAccessManager.checkPermission(mcrid, MCRAccessManager.PERMISSION_HISTORY_DELETE)) {
+            throw new MCRException("You are not authorized to delete '" + ocflObjectID + "' and its history!");
+        }
+
+        OcflRepository repo = getRepository();
+        repo.purgeObject(ocflObjectID);
+        // VersionInfo headVersion = repo.describeObject(ocflObjectID).getHeadVersion().getVersionInfo();
+        // TODO find a good way to do this
+        // repo.updateObject(ObjectVersionId.head(ocflObjectID), buildVersionInfo("Purged", date, user), null);
     }
 
     @Override
@@ -229,9 +283,14 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
             throw new IOException("Cannot read already deleted object '" + ocflObjectID + "'");
         }
 
+        Boolean archived
+            = convertMessageToType(repo.getObject(ObjectVersionId.head(ocflObjectID)).getVersionInfo().getMessage())
+                == MCROCFLMetadataVersion.DELETED;
+
         try (InputStream storedContentStream = storeObject.getFile(buildFilePath(mcrid)).getStream()) {
             Document xml = new MCRStreamContent(storedContentStream).asXML();
             xml.getRootElement().setAttribute("rev", revision);
+            xml.getRootElement().setAttribute("archive", archived.toString());
             return new MCRJDOMContent(xml);
         } catch (JDOMException | SAXException e) {
             throw new IOException("Can not parse XML from OCFL-Store", e);

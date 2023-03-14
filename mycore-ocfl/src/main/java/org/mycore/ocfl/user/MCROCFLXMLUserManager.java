@@ -35,6 +35,7 @@ import org.mycore.common.config.MCRConfiguration2;
 import org.mycore.common.content.MCRJDOMContent;
 import org.mycore.common.content.MCRStreamContent;
 import org.mycore.ocfl.repository.MCROCFLRepositoryProvider;
+import org.mycore.ocfl.util.MCROCFLDeleteUtils;
 import org.mycore.ocfl.util.MCROCFLObjectIDPrefixHelper;
 import org.mycore.user2.MCRTransientUser;
 import org.mycore.user2.MCRUser;
@@ -164,6 +165,11 @@ public class MCROCFLXMLUserManager {
         MCRUser currentUser = MCRUserManager.getCurrentUser();
         String ocflUserID = MCROCFLObjectIDPrefixHelper.USER + userId;
 
+        if(MCROCFLDeleteUtils.doPurgeUser(userId)) {
+            purgeUser(ocflUserID);
+            return;
+        }
+
         if (!exists(ocflUserID)) {
             throw new MCRUsageException(
                 "The User '" + userId + "' does not exist or has already been deleted!");
@@ -177,6 +183,17 @@ public class MCROCFLXMLUserManager {
             updater -> {
                 updater.removeFile(userId + ".xml");
             });
+    }
+
+    public void purgeUser(String userId) {
+        String ocflUserID = MCROCFLObjectIDPrefixHelper.USER + userId;
+
+        if (!repository.containsObject(ocflUserID)) {
+            throw new MCRUsageException(
+                "The User '" + userId + "' does not exist!");
+        }
+
+        repository.purgeObject(ocflUserID);
     }
 
     private String buildEmail(MCRUser currentUser) {
