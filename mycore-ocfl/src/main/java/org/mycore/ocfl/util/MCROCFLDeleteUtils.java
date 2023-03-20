@@ -35,17 +35,17 @@ public final class MCROCFLDeleteUtils {
         throw new IllegalStateException("Utility class");
     }
 
-    public static boolean doPurgeObject(MCRObjectID mcrid) {
+    public static boolean checkPurgeObject(MCRObjectID mcrid) {
         String prefix = MCROCFLObjectIDPrefixHelper.MCROBJECT;
-        return doPurgeObject(mcrid, prefix);
+        return checkPurgeObject(mcrid, prefix);
     }
 
-    public static boolean doPurgeDerivate(MCRObjectID mcrid) {
+    public static boolean checkPurgeDerivate(MCRObjectID mcrid) {
         String prefix = MCROCFLObjectIDPrefixHelper.MCRDERIVATE;
-        return doPurgeObject(mcrid, prefix);
+        return checkPurgeObject(mcrid, prefix);
     }
 
-    public static boolean doPurgeObject(MCRObjectID mcrid, String prefix) {
+    public static boolean checkPurgeObject(MCRObjectID mcrid, String prefix) {
         String ocflType = prefix.replace(":", "");
 
         boolean doPurge = false;
@@ -64,12 +64,12 @@ public final class MCROCFLDeleteUtils {
         return doPurge;
     }
 
-    public static boolean doPurgeClass(MCRCategoryID mcrid) {
+    public static boolean checkPurgeClass(MCRCategoryID mcrid) {
         String prefix = MCROCFLObjectIDPrefixHelper.CLASSIFICATION;
-        return doPurgeClass(mcrid, prefix);
+        return checkPurgeClass(mcrid, prefix);
     }
 
-    public static boolean doPurgeClass(MCRCategoryID mcrid, String prefix) {
+    public static boolean checkPurgeClass(MCRCategoryID mcrid, String prefix) {
         String ocflType = prefix.replace(":", "");
 
         boolean doPurge = false;
@@ -81,12 +81,12 @@ public final class MCROCFLDeleteUtils {
         return doPurge;
     }
 
-    public static boolean doPurgeUser(String userID) {
+    public static boolean checkPurgeUser(String userID) {
         String prefix = MCROCFLObjectIDPrefixHelper.USER;
-        return doPurgeUser(userID, prefix);
+        return checkPurgeUser(userID, prefix);
     }
 
-    public static boolean doPurgeUser(String userID, String prefix) {
+    public static boolean checkPurgeUser(String userID, String prefix) {
         String ocflType = prefix.replace(":", "");
 
         boolean doPurge = false;

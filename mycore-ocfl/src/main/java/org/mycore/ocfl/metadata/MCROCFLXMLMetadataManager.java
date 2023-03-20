@@ -168,7 +168,7 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
         String prefix = "derivate".equals(mcrid.getTypeId()) ? MCROCFLObjectIDPrefixHelper.MCRDERIVATE
             : MCROCFLObjectIDPrefixHelper.MCROBJECT;
 
-        if (MCROCFLDeleteUtils.doPurgeObject(mcrid, prefix)) {
+        if (MCROCFLDeleteUtils.checkPurgeObject(mcrid, prefix)) {
             purge(mcrid, date, user, true);
             return;
         }

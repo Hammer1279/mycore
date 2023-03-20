@@ -106,7 +106,7 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
 
     public void delete(MCRCategoryID mcrid) throws IOException {
 
-        if (MCROCFLDeleteUtils.doPurgeClass(mcrid)) {
+        if (MCROCFLDeleteUtils.checkPurgeClass(mcrid)) {
             purge(mcrid);
             return;
         }

@@ -165,7 +165,7 @@ public class MCROCFLXMLUserManager {
         MCRUser currentUser = MCRUserManager.getCurrentUser();
         String ocflUserID = MCROCFLObjectIDPrefixHelper.USER + userId;
 
-        if(MCROCFLDeleteUtils.doPurgeUser(userId)) {
+        if(MCROCFLDeleteUtils.checkPurgeUser(userId)) {
             purgeUser(ocflUserID);
             return;
         }
