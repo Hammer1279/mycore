@@ -122,7 +122,7 @@ public final class MCROCFLDeleteUtils {
      * Provides a Optional boolean if pattern is defined, otherwise returns empty Optional
      * @param toTest String to run pattern against
      * @param pattern pattern to test with or null
-     * @return empty Optional if pattern is null, otherwise Optional<Boolean> of match result
+     * @return empty Optional if pattern is null, otherwise Optional Boolean of match result
      */
     public static Optional<Boolean> regexMatcher(String toTest, Optional<String> pattern) {
         if (pattern.isEmpty()) {
