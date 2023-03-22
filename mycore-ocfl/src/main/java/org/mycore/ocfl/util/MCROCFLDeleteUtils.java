@@ -18,7 +18,12 @@
 
 package org.mycore.ocfl.util;
 
-import org.mycore.common.config.MCRConfiguration2;
+// actually increases readability
+import static org.mycore.common.config.MCRConfiguration2.getBoolean;
+import static org.mycore.common.config.MCRConfiguration2.getString;
+
+import java.util.Optional;
+
 import org.mycore.datamodel.classifications2.MCRCategoryID;
 import org.mycore.datamodel.metadata.MCRObjectID;
 
@@ -27,9 +32,15 @@ import org.mycore.datamodel.metadata.MCRObjectID;
  */
 public final class MCROCFLDeleteUtils {
 
+    // TODO maybe a property here to add permission check here, plus if insufficient permissions,
+    // default to "error, cant do" or "no purge, only markDelete"
+    // as in: MCR.OCFL.dropHistory.unauthorizedDefaultAction="throw/error","markOnly"
+
     // private static final String PROPERTY_PREFIX = "MCR.OCFL.instantPurge.";
     private static final String PROPERTY_PREFIX = "MCR.OCFL.dropHistory.";
-    // private static final String PROPERTY_PREFIX = "MCR.OCFL.forceDelete.";
+    private static final String PP = PROPERTY_PREFIX;
+
+    // private static final Function<String, Optional<Boolean>> gB = MCRConfiguration2::getBoolean;
 
     private MCROCFLDeleteUtils() {
         throw new IllegalStateException("Utility class");
@@ -49,18 +60,20 @@ public final class MCROCFLDeleteUtils {
         String ocflType = prefix.replace(":", "");
 
         boolean doPurge = false;
-        doPurge
-            = MCRConfiguration2.getBoolean(PROPERTY_PREFIX.substring(0, PROPERTY_PREFIX.length() - 1)).orElse(doPurge);
-        doPurge = MCRConfiguration2.getBoolean(PROPERTY_PREFIX + ocflType).orElse(doPurge);
-        doPurge = MCRConfiguration2.getBoolean(PROPERTY_PREFIX + mcrid.getProjectId()).orElse(doPurge);
-        doPurge = MCRConfiguration2.getBoolean(PROPERTY_PREFIX + mcrid.getTypeId()).orElse(doPurge);
-        doPurge = MCRConfiguration2.getBoolean(PROPERTY_PREFIX + mcrid.getBase()).orElse(doPurge);
-        doPurge
-            = MCRConfiguration2.getBoolean(PROPERTY_PREFIX + ocflType + "." + mcrid.getProjectId()).orElse(doPurge);
-        doPurge = MCRConfiguration2.getBoolean(PROPERTY_PREFIX + ocflType + "." + mcrid.getTypeId()).orElse(doPurge);
-        doPurge = MCRConfiguration2.getBoolean(PROPERTY_PREFIX + ocflType + "." + mcrid.getBase()).orElse(doPurge);
-        doPurge = MCRConfiguration2.getBoolean(PROPERTY_PREFIX + mcrid).orElse(doPurge);
-        doPurge = MCRConfiguration2.getBoolean(PROPERTY_PREFIX + ocflType + "." + mcrid).orElse(doPurge);
+        doPurge = getBoolean(PP.substring(0, PP.length() - 1)).orElse(doPurge);
+        doPurge = regexMatcher(mcrid.toString(), getString(PP + "preMatch")).orElse(doPurge);
+        doPurge = getBoolean(PP + ocflType).orElse(doPurge);
+        doPurge = getBoolean(PP + mcrid.getProjectId()).orElse(doPurge);
+        doPurge = getBoolean(PP + mcrid.getTypeId()).orElse(doPurge);
+        doPurge = getBoolean(PP + mcrid.getBase()).orElse(doPurge);
+        doPurge = regexMatcher(mcrid.toString(), getString(PP + ocflType + ".preMatch")).orElse(doPurge);
+        doPurge = getBoolean(PP + ocflType + "." + mcrid.getProjectId()).orElse(doPurge);
+        doPurge = getBoolean(PP + ocflType + "." + mcrid.getTypeId()).orElse(doPurge);
+        doPurge = getBoolean(PP + ocflType + "." + mcrid.getBase()).orElse(doPurge);
+        doPurge = getBoolean(PP + mcrid).orElse(doPurge);
+        doPurge = getBoolean(PP + ocflType + "." + mcrid).orElse(doPurge);
+        doPurge = regexMatcher(mcrid.toString(), getString(PP + "postMatch")).orElse(doPurge);
+        doPurge = regexMatcher(mcrid.toString(), getString(PP + ocflType + ".postMatch")).orElse(doPurge);
         return doPurge;
     }
 
@@ -73,11 +86,15 @@ public final class MCROCFLDeleteUtils {
         String ocflType = prefix.replace(":", "");
 
         boolean doPurge = false;
-        doPurge
-            = MCRConfiguration2.getBoolean(PROPERTY_PREFIX.substring(0, PROPERTY_PREFIX.length() - 1)).orElse(doPurge);
-        doPurge = MCRConfiguration2.getBoolean(PROPERTY_PREFIX + ocflType).orElse(doPurge);
-        doPurge = MCRConfiguration2.getBoolean(PROPERTY_PREFIX + mcrid.getRootID()).orElse(doPurge);
-        doPurge = MCRConfiguration2.getBoolean(PROPERTY_PREFIX + ocflType + "." + mcrid.getRootID()).orElse(doPurge);
+        doPurge = getBoolean(PP.substring(0, PP.length() - 1)).orElse(doPurge);
+        doPurge = regexMatcher(mcrid.toString(), getString(PP + "preMatch")).orElse(doPurge);
+        doPurge = regexMatcher(mcrid.toString(), getString(PP + ocflType + ".preMatch")).orElse(doPurge);
+        doPurge = getBoolean(PP + ocflType).orElse(doPurge);
+        doPurge = getBoolean(PP + mcrid.getRootID()).orElse(doPurge);
+        doPurge = getBoolean(PP + ocflType + "." + mcrid.getRootID()).orElse(doPurge);
+
+        doPurge = regexMatcher(mcrid.toString(), getString(PP + "postMatch")).orElse(doPurge);
+        doPurge = regexMatcher(mcrid.toString(), getString(PP + ocflType + ".postMatch")).orElse(doPurge);
         return doPurge;
     }
 
@@ -90,11 +107,27 @@ public final class MCROCFLDeleteUtils {
         String ocflType = prefix.replace(":", "");
 
         boolean doPurge = false;
-        doPurge
-            = MCRConfiguration2.getBoolean(PROPERTY_PREFIX.substring(0, PROPERTY_PREFIX.length() - 1)).orElse(doPurge);
-        doPurge = MCRConfiguration2.getBoolean(PROPERTY_PREFIX + ocflType).orElse(doPurge);
-        doPurge = MCRConfiguration2.getBoolean(PROPERTY_PREFIX + userID).orElse(doPurge);
-        doPurge = MCRConfiguration2.getBoolean(PROPERTY_PREFIX + ocflType + "." + userID).orElse(doPurge);
+        doPurge = getBoolean(PP.substring(0, PP.length() - 1)).orElse(doPurge);
+        doPurge = regexMatcher(userID, getString(PP + "preMatch")).orElse(doPurge);
+        doPurge = regexMatcher(userID, getString(PP + ocflType + ".preMatch")).orElse(doPurge);
+        doPurge = getBoolean(PP + ocflType).orElse(doPurge);
+        doPurge = getBoolean(PP + userID).orElse(doPurge);
+        doPurge = getBoolean(PP + ocflType + "." + userID).orElse(doPurge);
+        doPurge = regexMatcher(userID, getString(PP + "postMatch")).orElse(doPurge);
+        doPurge = regexMatcher(userID, getString(PP + ocflType + ".postMatch")).orElse(doPurge);
         return doPurge;
+    }
+
+    /**
+     * Provides a Optional boolean if pattern is defined, otherwise returns empty Optional
+     * @param toTest String to run pattern against
+     * @param pattern pattern to test with or null
+     * @return empty Optional if pattern is null, otherwise Optional<Boolean> of match result
+     */
+    public static Optional<Boolean> regexMatcher(String toTest, Optional<String> pattern) {
+        if (pattern.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(toTest.matches(pattern.get()));
     }
 }
