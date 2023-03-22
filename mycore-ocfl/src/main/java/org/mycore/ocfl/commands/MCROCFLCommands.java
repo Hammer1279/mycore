@@ -189,6 +189,7 @@ public class MCROCFLCommands {
     public static void restoreObjFromOCFL(String mcridString, String revision) throws IOException {
         MCRObjectID mcrid = MCRObjectID.getInstance(mcridString);
         MCROCFLXMLMetadataManager manager = new MCROCFLXMLMetadataManager();
+        manager.setRepositoryKey(MCRConfiguration2.getStringOrThrow("MCR.Metadata.Manager.Repository"));
         MCRContent content = manager.retrieveContent(mcrid, revision);
         try {
             MCRXMLMetadataManager.instance().update(mcrid, content, new Date(content.lastModified()));
@@ -201,7 +202,9 @@ public class MCROCFLCommands {
         help = "Permanently delete object {0} and its history from ocfl")
     public static void purgeObject(String mcridString) throws IOException {
         MCRObjectID mcrid = MCRObjectID.getInstance(mcridString);
-        new MCROCFLXMLMetadataManager().purge(mcrid, new Date(), MCRUserManager.getCurrentUser().getUserName(), true);
+        MCROCFLXMLMetadataManager manager = new MCROCFLXMLMetadataManager();
+        manager.setRepositoryKey(MCRConfiguration2.getStringOrThrow("MCR.Metadata.Manager.Repository"));
+        manager.purge(mcrid, new Date(), MCRUserManager.getCurrentUser().getUserName(), true);
     }
 
     @MCRCommand(syntax = "purge class {0} from ocfl",
@@ -357,10 +360,14 @@ public class MCROCFLCommands {
         //     .collect(Collectors.toList());
     }
 
+    // TODO add the other bulk restore commands
+
     @MCRCommand(syntax = "restore ocfl object {0} rev {1}",
         help = "Restore me!")
     public static void restoreObj(String mcrId, String revision) {
-        new MCROCFLXMLMetadataManager().restore(MCRObjectID.getInstance(mcrId), revision);
+        MCROCFLXMLMetadataManager manager = new MCROCFLXMLMetadataManager();
+        manager.setRepositoryKey(MCRConfiguration2.getStringOrThrow("MCR.Metadata.Manager.Repository"));
+        manager.restore(MCRObjectID.getInstance(mcrId), revision);
     }
 
     @MCRCommand(syntax = "restore ocfl class {0} rev {1}",
