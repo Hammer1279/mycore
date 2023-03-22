@@ -138,32 +138,6 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
         delete(mcrid, null, null);
     }
 
-// public void delete(MCRObjectID mcrid, Date date, String user) throws MCRPersistenceException {
-//     String PREFIX = "derivate".equals(mcrid.getTypeId()) ? 
-// MCROCFLObjectIDPrefixHelper.MCRDERIVATE : MCROCFLObjectIDPrefixHelper.MCROBJECT;
-//     if (MCROCFLUtils.doPurgeObject(mcrid, PREFIX)) {
-//         purge(mcrid, date, user, true);
-//     } else {
-//         markDeleted(mcrid, date, user);
-//     }
-// }
-
-// void markDeleted(MCRObjectID mcrid, Date date, String user) throws MCRPersistenceException {
-//     String ocflObjectID = getOCFLObjectID(mcrid);
-//     if (!exists(mcrid)) {
-//         throw new MCRUsageException("Cannot delete nonexistent object '" + ocflObjectID + "'");
-//     }
-//     OcflRepository repo = getRepository();
-//     VersionInfo headVersion = repo.describeObject(ocflObjectID).getHeadVersion().getVersionInfo();
-//     char versionType = convertMessageToType(headVersion.getMessage());
-//     if (versionType == MCROCFLMetadataVersion.DELETED) {
-//         throw new MCRUsageException("Cannot delete already deleted object '" + ocflObjectID + "'");
-//     }
-//     repo.updateObject(ObjectVersionId.head(ocflObjectID), buildVersionInfo(MESSAGE_DELETED, date, null), init -> {
-//         init.removeFile(buildFilePath(mcrid));
-//     });
-// }
-
     public void delete(MCRObjectID mcrid, Date date, String user) throws MCRPersistenceException {
         String prefix = "derivate".equals(mcrid.getTypeId()) ? MCROCFLObjectIDPrefixHelper.MCRDERIVATE
             : MCROCFLObjectIDPrefixHelper.MCROBJECT;
@@ -203,6 +177,22 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
         // VersionInfo headVersion = repo.describeObject(ocflObjectID).getHeadVersion().getVersionInfo();
         // TODO find a good way to do this
         // repo.updateObject(ObjectVersionId.head(ocflObjectID), buildVersionInfo("Purged", date, user), null);
+    }
+
+    public void restore(MCRObjectID mcrid, String revision) {
+        String prefix = "derivate".equals(mcrid.getTypeId()) ? MCROCFLObjectIDPrefixHelper.MCRDERIVATE
+        : MCROCFLObjectIDPrefixHelper.MCROBJECT;
+        String ocflObjectID = getOCFLObjectID(mcrid);
+        OcflRepository repo = getRepository();
+        if (!repo.containsObject(ocflObjectID)) {
+            throw new MCRUsageException("Cannot restore nonexistent object '" + ocflObjectID + "'");
+        }
+        ObjectVersionId version = ObjectVersionId.version(ocflObjectID, revision);
+        if (MCROCFLDeleteUtils.checkPurgeObject(mcrid, prefix)) {
+            repo.rollbackToVersion(version);
+        } else {
+            repo.replicateVersionAsHead(version, null);
+        }
     }
 
     @Override

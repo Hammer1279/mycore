@@ -165,7 +165,7 @@ public class MCROCFLXMLUserManager {
         MCRUser currentUser = MCRUserManager.getCurrentUser();
         String ocflUserID = MCROCFLObjectIDPrefixHelper.USER + userId;
 
-        if(MCROCFLDeleteUtils.checkPurgeUser(userId)) {
+        if (MCROCFLDeleteUtils.checkPurgeUser(userId)) {
             purgeUser(ocflUserID);
             return;
         }
@@ -194,6 +194,19 @@ public class MCROCFLXMLUserManager {
         }
 
         repository.purgeObject(ocflUserID);
+    }
+
+    public void restoreUser(String userId, String revision) {
+        String ocflUserID = MCROCFLObjectIDPrefixHelper.USER + userId;
+        if (!repository.containsObject(ocflUserID)) {
+            throw new MCRUsageException("Cannot restore nonexistent user '" + ocflUserID + "'");
+        }
+        ObjectVersionId version = ObjectVersionId.version(ocflUserID, revision);
+        if (MCROCFLDeleteUtils.checkPurgeUser(ocflUserID)) {
+            repository.rollbackToVersion(version);
+        } else {
+            repository.replicateVersionAsHead(version, null);
+        }
     }
 
     private String buildEmail(MCRUser currentUser) {

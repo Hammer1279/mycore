@@ -105,12 +105,10 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
     }
 
     public void delete(MCRCategoryID mcrid) throws IOException {
-
         if (MCROCFLDeleteUtils.checkPurgeClass(mcrid)) {
             purge(mcrid);
             return;
         }
-
         String ocflObjectID = getOCFLObjectID(mcrid);
         VersionInfo versionInfo = buildVersionInfo(MESSAGE_DELETED, new Date());
         try {
@@ -121,27 +119,22 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         }
     }
 
-    // public void delete(MCRCategoryID mcrid) throws IOException {
-    //     if (MCROCFLUtils.doPurgeClass(mcrid, MCROCFLObjectIDPrefixHelper.CLASSIFICATION)) {
-    //         purge(mcrid);
-    //     } else {
-    //         markDeleted(mcrid);
-    //     }
-    // }
-
-    // public void markDeleted(MCRCategoryID mcrid) throws IOException {
-    //     String ocflObjectID = getOCFLObjectID(mcrid);
-    //     VersionInfo versionInfo = buildVersionInfo(MESSAGE_DELETED, new Date());
-    //     try {
-    //         getRepository().updateObject(ObjectVersionId.head(ocflObjectID), versionInfo,
-    //             updater -> updater.removeFile(buildFilePath(mcrid)));
-    //     } catch (NotFoundException | ObjectOutOfSyncException e) {
-    //         throw new IOException(e);
-    //     }
-    // }
-
     public void purge(MCRCategoryID mcrid) {
         getRepository().purgeObject(getOCFLObjectID(mcrid));
+    }
+
+    public void restore(MCRCategoryID mcrid, String revision) {
+        String ocflObjectID = getOCFLObjectID(mcrid);
+        OcflRepository repo = getRepository();
+        if (!repo.containsObject(ocflObjectID)) {
+            throw new MCRUsageException("Cannot restore nonexistent category '" + ocflObjectID + "'");
+        }
+        ObjectVersionId version = ObjectVersionId.version(ocflObjectID, revision);
+        if (MCROCFLDeleteUtils.checkPurgeClass(mcrid)) {
+            repo.rollbackToVersion(version);
+        } else {
+            repo.replicateVersionAsHead(version, null);
+        }
     }
 
     /**
