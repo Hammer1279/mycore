@@ -181,14 +181,15 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
 
     public void restore(MCRObjectID mcrid, String revision) {
         String prefix = "derivate".equals(mcrid.getTypeId()) ? MCROCFLObjectIDPrefixHelper.MCRDERIVATE
-        : MCROCFLObjectIDPrefixHelper.MCROBJECT;
+            : MCROCFLObjectIDPrefixHelper.MCROBJECT;
         String ocflObjectID = getOCFLObjectID(mcrid);
         OcflRepository repo = getRepository();
         if (!repo.containsObject(ocflObjectID)) {
             throw new MCRUsageException("Cannot restore nonexistent object '" + ocflObjectID + "'");
         }
         ObjectVersionId version = ObjectVersionId.version(ocflObjectID, revision);
-        if (MCROCFLDeleteUtils.checkPurgeObject(mcrid, prefix)) {
+        if (MCROCFLDeleteUtils.regexMatcher(ocflObjectID, MCROCFLDeleteUtils.PROPERTY_RESTORE)
+            .orElse(MCROCFLDeleteUtils.checkPurgeObject(mcrid, prefix))) {
             repo.rollbackToVersion(version);
         } else {
             repo.replicateVersionAsHead(version, null);

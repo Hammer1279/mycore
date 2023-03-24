@@ -28,6 +28,7 @@ import org.mycore.datamodel.classifications2.MCRCategoryID;
 import org.mycore.datamodel.metadata.MCRObjectID;
 
 /**
+ * Utility Class to decide when to keep or drop the history of elements
  * @author Tobias Lenhardt [Hammer1279]
  */
 public final class MCROCFLDeleteUtils {
@@ -37,8 +38,13 @@ public final class MCROCFLDeleteUtils {
     // as in: MCR.OCFL.dropHistory.unauthorizedDefaultAction="throw/error","markOnly"
 
     // private static final String PROPERTY_PREFIX = "MCR.OCFL.instantPurge.";
-    private static final String PROPERTY_PREFIX = "MCR.OCFL.dropHistory.";
+    public static final String PROPERTY_PREFIX = "MCR.OCFL.dropHistory.";
     private static final String PP = PROPERTY_PREFIX;
+
+    /**
+     * for use of restore check with {@link #regexMatcher}
+     */
+    public static final Optional<String> PROPERTY_RESTORE = Optional.of("onRestore");
 
     // private static final Function<String, Optional<Boolean>> gB = MCRConfiguration2::getBoolean;
 

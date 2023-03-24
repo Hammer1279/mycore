@@ -202,7 +202,8 @@ public class MCROCFLXMLUserManager {
             throw new MCRUsageException("Cannot restore nonexistent user '" + ocflUserID + "'");
         }
         ObjectVersionId version = ObjectVersionId.version(ocflUserID, revision);
-        if (MCROCFLDeleteUtils.checkPurgeUser(ocflUserID)) {
+        if (MCROCFLDeleteUtils.regexMatcher(ocflUserID, MCROCFLDeleteUtils.PROPERTY_RESTORE)
+            .orElse(MCROCFLDeleteUtils.checkPurgeUser(ocflUserID))) {
             repository.rollbackToVersion(version);
         } else {
             repository.replicateVersionAsHead(version, null);

@@ -130,7 +130,8 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
             throw new MCRUsageException("Cannot restore nonexistent category '" + ocflObjectID + "'");
         }
         ObjectVersionId version = ObjectVersionId.version(ocflObjectID, revision);
-        if (MCROCFLDeleteUtils.checkPurgeClass(mcrid)) {
+        if (MCROCFLDeleteUtils.regexMatcher(ocflObjectID, MCROCFLDeleteUtils.PROPERTY_RESTORE)
+            .orElse(MCROCFLDeleteUtils.checkPurgeClass(mcrid))) {
             repo.rollbackToVersion(version);
         } else {
             repo.replicateVersionAsHead(version, null);
