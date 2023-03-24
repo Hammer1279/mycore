@@ -20,6 +20,7 @@ package org.mycore.ocfl.commands;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.function.Predicate;
@@ -243,7 +244,7 @@ public class MCROCFLCommands {
         confirmPurgeMarked = false;
     }
 
-    // TODO maybe change these to/add match versions
+    // TODO maybe change these to/add match versions, see how it is handled in restore
 
     @MCRCommand(syntax = "purge marked metadata from ocfl",
         help = "Permanently delete all hidden/archived ocfl objects")
@@ -337,26 +338,32 @@ public class MCROCFLCommands {
         confirmPurgeMarked = false;
     }
 
-    // @MCRCommand(syntax = "restore all ocfl entries matching {0}",
-    //     help = "Restores all ocfj entries that match the given regex, use .* for all")
-    // public static List<String> restoreMatchAll(String regex) {
-    //     List<String> commands = new ArrayList<>();
-    //     String[] parts = regex.split(":", 2);
-    //     if (parts.length < 2 && !"any:any_thing".matches(regex[0])) {
-    //         throw new MCRUsageException("The Regular Expression is missing some part");
-    //     }
-    //     if (MCROCFLObjectIDPrefixHelper.MCROBJECT.equals(parts[0])
-    //         || MCROCFLObjectIDPrefixHelper.MCRDERIVATE.equals(parts[0])) {
-    //         commands.add("restore ocfl objects matching" + regex[1]);
-    //     }
-    //     if (MCROCFLObjectIDPrefixHelper.MCROBJECT.equals(parts[0])) {
-    //         commands.add("restore ocfl classifications matching" + regex[1]);
-    //     }
-    //     if (MCROCFLObjectIDPrefixHelper.MCROBJECT.equals(parts[0])) {
-    //         commands.add("restore ocfl users matching" + regex[1]);
-    //     }
-    //     return commands;
-    // }
+    @MCRCommand(syntax = "restore all ocfl entries matching {0}",
+        help = "Restores all ocfj entries that match the given regex, use .* for all")
+    public static List<String> restoreMatchAll(String regex) {
+        List<String> commands = new ArrayList<>();
+        String[] parts = regex.split(":", 2);
+        if (parts.length < 2) {
+            // if (!"mcrany:any_thing".contains(parts[0])) {
+            //     throw new MCRUsageException("The Regular Expression is invalid, " +
+            //         "either use a wildcard or specify the type");
+            // }
+            parts = Arrays.copyOf(parts, parts.length + 1);
+            parts[1] = parts[0];
+        }
+        parts[0] += ":";
+        if (MCROCFLObjectIDPrefixHelper.MCROBJECT.matches(parts[0])
+            || MCROCFLObjectIDPrefixHelper.MCRDERIVATE.matches(parts[0])) {
+            commands.add("restore ocfl objects matching" + parts[1]);
+        }
+        if (MCROCFLObjectIDPrefixHelper.MCROBJECT.matches(parts[0])) {
+            commands.add("restore ocfl classifications matching" + parts[1]);
+        }
+        if (MCROCFLObjectIDPrefixHelper.MCROBJECT.matches(parts[0])) {
+            commands.add("restore ocfl users matching" + parts[1]);
+        }
+        return commands;
+    }
 
     @MCRCommand(syntax = "restore ocfl objects matching {0}",
         help = "Restore ocfl objects that are matching the RegEx {0}")
