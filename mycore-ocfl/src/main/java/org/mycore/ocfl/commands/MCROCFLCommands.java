@@ -243,6 +243,8 @@ public class MCROCFLCommands {
         confirmPurgeMarked = false;
     }
 
+    // TODO maybe change these to/add match versions
+
     @MCRCommand(syntax = "purge marked metadata from ocfl",
         help = "Permanently delete all hidden/archived ocfl objects")
     public static void purgeMarkedObjects() throws IOException {
@@ -335,6 +337,27 @@ public class MCROCFLCommands {
         confirmPurgeMarked = false;
     }
 
+    // @MCRCommand(syntax = "restore all ocfl entries matching {0}",
+    //     help = "Restores all ocfj entries that match the given regex, use .* for all")
+    // public static List<String> restoreMatchAll(String regex) {
+    //     List<String> commands = new ArrayList<>();
+    //     String[] parts = regex.split(":", 2);
+    //     if (parts.length < 2 && !"any:any_thing".matches(regex[0])) {
+    //         throw new MCRUsageException("The Regular Expression is missing some part");
+    //     }
+    //     if (MCROCFLObjectIDPrefixHelper.MCROBJECT.equals(parts[0])
+    //         || MCROCFLObjectIDPrefixHelper.MCRDERIVATE.equals(parts[0])) {
+    //         commands.add("restore ocfl objects matching" + regex[1]);
+    //     }
+    //     if (MCROCFLObjectIDPrefixHelper.MCROBJECT.equals(parts[0])) {
+    //         commands.add("restore ocfl classifications matching" + regex[1]);
+    //     }
+    //     if (MCROCFLObjectIDPrefixHelper.MCROBJECT.equals(parts[0])) {
+    //         commands.add("restore ocfl users matching" + regex[1]);
+    //     }
+    //     return commands;
+    // }
+
     @MCRCommand(syntax = "restore ocfl objects matching {0}",
         help = "Restore ocfl objects that are matching the RegEx {0}")
     public static List<String> restoreMatchObj(String regex) {
@@ -348,6 +371,7 @@ public class MCROCFLCommands {
                 .equals(manager.getRepository().describeObject(obj).getHeadVersion().getVersionInfo().getMessage()))
             .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.MCROBJECT, ""))
             .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.MCRDERIVATE, ""))
+            .filter(obj -> obj.matches(regex))
             .map(id -> "restore ocfl object " + id + " rev v"
                 + manager.listRevisions(MCRObjectID.getInstance(id)).size())
             .collect(Collectors.toList());
@@ -358,6 +382,39 @@ public class MCROCFLCommands {
         //     .map(id -> "restore ocfl object " + id + " rev v"
         //         + manager.listRevisions(MCRObjectID.getInstance(id)).size())
         //     .collect(Collectors.toList());
+    }
+
+    @MCRCommand(syntax = "restore ocfl classifications matching {0}",
+        help = "Restore ocfl classifications that are matching the RegEx {0}")
+    public static List<String> restoreMatchClass(String regex) {
+        String repositoryKey = MCRConfiguration2.getStringOrThrow("MCR.Classification.Manager.Repository");
+        OcflRepository repository = MCROCFLRepositoryProvider.getRepository(repositoryKey);
+        return repository.listObjectIds()
+            .filter(obj -> obj.startsWith(MCROCFLObjectIDPrefixHelper.CLASSIFICATION))
+            .filter(obj -> MCROCFLXMLClassificationManager.MESSAGE_DELETED.equals(repository.describeObject(obj)
+                .getHeadVersion().getVersionInfo().getMessage()))
+            .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.CLASSIFICATION, ""))
+            .filter(obj -> obj.matches(regex))
+            .map(id -> "restore ocfl class " + id + " rev v"
+                + (repository.describeObject(MCROCFLObjectIDPrefixHelper.CLASSIFICATION + id).getVersionMap().size()
+                    - 1))
+            .collect(Collectors.toList());
+    }
+
+    @MCRCommand(syntax = "restore ocfl users matching {0}",
+        help = "Restore ocfl users that are matching the RegEx {0}")
+    public static List<String> restoreMatchUsr(String regex) {
+        String repositoryKey = MCRConfiguration2.getStringOrThrow("MCR.Users.Manager.Repository");
+        OcflRepository repository = MCROCFLRepositoryProvider.getRepository(repositoryKey);
+        return repository.listObjectIds()
+            .filter(obj -> obj.startsWith(MCROCFLObjectIDPrefixHelper.USER))
+            .filter(obj -> MCROCFLXMLUserManager.MESSAGE_DELETED.equals(repository.describeObject(obj)
+                .getHeadVersion().getVersionInfo().getMessage()))
+            .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.USER, ""))
+            .filter(obj -> obj.matches(regex))
+            .map(id -> "restore ocfl object " + id + " rev v"
+                + (repository.describeObject(MCROCFLObjectIDPrefixHelper.USER + id).getVersionMap().size() - 1))
+            .collect(Collectors.toList());
     }
 
     // TODO add the other bulk restore commands
