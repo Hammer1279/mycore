@@ -165,7 +165,7 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
     // FIXME remove permission check 
     public void purge(MCRObjectID mcrid, Date date, String user, boolean skipPermCheck) {
         String ocflObjectID = getOCFLObjectID(mcrid);
-        if (!exists(mcrid)) {
+        if (!getRepository().containsObject(ocflObjectID)) {
             throw new MCRUsageException("Cannot delete nonexistent object '" + ocflObjectID + "'");
         }
 
