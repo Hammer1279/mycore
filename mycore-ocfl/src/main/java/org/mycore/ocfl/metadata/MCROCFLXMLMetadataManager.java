@@ -162,6 +162,7 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
         });
     }
 
+    // FIXME remove permission check 
     public void purge(MCRObjectID mcrid, Date date, String user, boolean skipPermCheck) {
         String ocflObjectID = getOCFLObjectID(mcrid);
         if (!exists(mcrid)) {
@@ -274,14 +275,15 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
             throw new IOException("Cannot read already deleted object '" + ocflObjectID + "'");
         }
 
-        Boolean archived
-            = convertMessageToType(repo.getObject(ObjectVersionId.head(ocflObjectID)).getVersionInfo().getMessage())
-                == MCROCFLMetadataVersion.DELETED;
+        // Boolean archived
+        //     = convertMessageToType(repo.getObject(ObjectVersionId.head(ocflObjectID)).getVersionInfo().getMessage())
+        //         == MCROCFLMetadataVersion.DELETED;
 
         try (InputStream storedContentStream = storeObject.getFile(buildFilePath(mcrid)).getStream()) {
             Document xml = new MCRStreamContent(storedContentStream).asXML();
-            xml.getRootElement().setAttribute("rev", revision);
-            xml.getRootElement().setAttribute("archive", archived.toString());
+            
+            xml.getRootElement().setAttribute("rev", revision); // bugfix: MCR-2510, PR #1373
+            // xml.getRootElement().setAttribute("archive", archived.toString());
             return new MCRJDOMContent(xml);
         } catch (JDOMException | SAXException e) {
             throw new IOException("Can not parse XML from OCFL-Store", e);
