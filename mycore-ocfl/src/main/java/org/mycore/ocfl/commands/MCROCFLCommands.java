@@ -277,7 +277,10 @@ public class MCROCFLCommands {
         //     })
         //     .forEach(m -> mcrMM.purge(m, new Date(), MCRUserManager.getCurrentUser().getUserName(), true));
         String repositoryKey = MCRConfiguration2.getStringOrThrow("MCR.Metadata.Manager.Repository");
-        OcflRepository repository = MCROCFLRepositoryProvider.getRepository(repositoryKey);
+        MCROCFLXMLMetadataManager manager = new MCROCFLXMLMetadataManager();
+        manager.setRepositoryKey(repositoryKey)
+        OcflRepository repository = manager.getRepository();
+        // OcflRepository repository = MCROCFLRepositoryProvider.getRepository(repositoryKey);
         repository.listObjectIds()
             .filter(obj -> obj.startsWith(MCROCFLObjectIDPrefixHelper.MCROBJECT)
                 || obj.startsWith(MCROCFLObjectIDPrefixHelper.MCRDERIVATE))
@@ -285,7 +288,7 @@ public class MCROCFLCommands {
                 .getHeadVersion().getVersionInfo().getMessage()))
             .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.MCROBJECT, ""))
             .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.MCRDERIVATE, ""))
-            .forEach(oId -> new MCROCFLXMLMetadataManager().purge(MCRObjectID.getInstance(oId), new Date(),
+            .forEach(oId -> manager.purge(MCRObjectID.getInstance(oId), new Date(),
                 MCRUserManager.getCurrentUser().getUserName(), true));
         confirmPurgeMarked = false;
     }
