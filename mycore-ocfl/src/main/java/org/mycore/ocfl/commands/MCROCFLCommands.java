@@ -278,7 +278,7 @@ public class MCROCFLCommands {
         //     .forEach(m -> mcrMM.purge(m, new Date(), MCRUserManager.getCurrentUser().getUserName(), true));
         String repositoryKey = MCRConfiguration2.getStringOrThrow("MCR.Metadata.Manager.Repository");
         MCROCFLXMLMetadataManager manager = new MCROCFLXMLMetadataManager();
-        manager.setRepositoryKey(repositoryKey)
+        manager.setRepositoryKey(repositoryKey);
         OcflRepository repository = manager.getRepository();
         // OcflRepository repository = MCROCFLRepositoryProvider.getRepository(repositoryKey);
         repository.listObjectIds()
