@@ -19,6 +19,7 @@
 package org.mycore.ocfl.commands;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -28,11 +29,16 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jdom2.JDOMException;
 import org.mycore.common.MCRUsageException;
 import org.mycore.common.config.MCRConfiguration2;
 import org.mycore.common.content.MCRContent;
+import org.mycore.datamodel.classifications2.MCRCategory;
+import org.mycore.datamodel.classifications2.MCRCategoryDAO;
+import org.mycore.datamodel.classifications2.MCRCategoryDAOFactory;
 import org.mycore.datamodel.classifications2.MCRCategoryID;
 import org.mycore.datamodel.classifications2.impl.MCRCategoryDAOImpl;
+import org.mycore.datamodel.classifications2.utils.MCRXMLTransformer;
 import org.mycore.datamodel.common.MCRAbstractMetadataVersion;
 import org.mycore.datamodel.common.MCRXMLMetadataManager;
 import org.mycore.datamodel.metadata.MCRObjectID;
@@ -47,6 +53,7 @@ import org.mycore.ocfl.user.MCROCFLXMLUserManager;
 import org.mycore.ocfl.util.MCROCFLObjectIDPrefixHelper;
 import org.mycore.user2.MCRUser;
 import org.mycore.user2.MCRUserManager;
+import org.xml.sax.SAXException;
 
 import edu.wisc.library.ocfl.api.OcflRepository;
 
@@ -171,22 +178,45 @@ public class MCROCFLCommands {
         return commands;
     }
 
-    @MCRCommand(syntax = "restore user {0} from ocfl with version {1}",
+    @MCRCommand(syntax = "repair user {0} from ocfl with version {1}",
         help = "restore a specified revision of a ocfl user backup to the primary user store")
     public static void writeUserToDbVersioned(String userId, String revision) throws IOException {
         MCRUser user = new MCROCFLXMLUserManager().retrieveContent(userId, revision);
         MCRUserManager.updateUser(user);
     }
 
-    @MCRCommand(syntax = "restore user {0} from ocfl",
+    @MCRCommand(syntax = "repair user {0} from ocfl",
         help = "restore the latest revision of a ocfl user backup to the primary user store")
     public static void writeUserToDb(String userId) throws IOException {
         MCRUser user = new MCROCFLXMLUserManager().retrieveContent(userId, null);
         MCRUserManager.updateUser(user);
     }
 
+    @MCRCommand(syntax = "repair classification {0} from ocfl with version {1}",
+        help = "restore a specified revision of a ocfl classification backup to the primary classification store")
+    public static void writeClassToDbVersioned(String classId, String revision) throws URISyntaxException, JDOMException, IOException, SAXException {
+        MCROCFLXMLClassificationManager manager = MCRConfiguration2.<MCROCFLXMLClassificationManager>getSingleInstanceOf("MCR.Classification.Manager").orElseThrow();
+        MCRCategoryID cId = MCRCategoryID.fromString(classId);
+        MCRContent content = manager.retrieveContent(cId, revision);
+        MCRCategory category = MCRXMLTransformer.getCategory(content.asXML());
+        MCRCategoryDAO dao = MCRCategoryDAOFactory.getInstance();
+        if (dao.exist(category.getId())) {
+            dao.replaceCategory(category);
+        } else {
+            // add if classification does not exist
+            dao.addCategory(null, category);
+        }
+    }
+
+    @MCRCommand(syntax = "repair classification {0} from ocfl",
+        help = "restore the latest revision of a ocfl classification backup to the primary classification store")
+    public static void writeClassToDb(String classId) throws URISyntaxException, JDOMException, IOException, SAXException {
+        writeClassToDbVersioned(classId, null);
+    }
+
+    @Deprecated(forRemoval = true)
     @MCRCommand(syntax = "restore object {0} rev {1} from ocfl history",
-        help = "restore mcrobject {0} with version {1} to current store from ocfl history")
+        help = "DEPRECATED - restore mcrobject {0} with version {1} to current store from ocfl history")
     public static void restoreObjFromOCFL(String mcridString, String revision) throws IOException {
         MCRObjectID mcrid = MCRObjectID.getInstance(mcridString);
         MCROCFLXMLMetadataManager manager = new MCROCFLXMLMetadataManager();
@@ -440,8 +470,8 @@ public class MCROCFLCommands {
     @MCRCommand(syntax = "restore ocfl class {0} rev {1}",
         help = "Restore me!")
     public static void restoreClass(String mcrId, String revision) {
-        MCROCFLXMLMetadataManager manager = new MCROCFLXMLClassificationManager();
-        manager.setRepositoryKey(MCRConfiguration2.getStringOrThrow("MCR.Classification.Manager.Repository"));
+        MCROCFLXMLClassificationManager manager = MCRConfiguration2
+            .<MCROCFLXMLClassificationManager>getSingleInstanceOf("MCR.Classification.Manager").orElseThrow();
         manager.restore(MCRCategoryID.fromString(mcrId), revision);
     }
 
