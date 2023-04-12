@@ -440,7 +440,9 @@ public class MCROCFLCommands {
     @MCRCommand(syntax = "restore ocfl class {0} rev {1}",
         help = "Restore me!")
     public static void restoreClass(String mcrId, String revision) {
-        new MCROCFLXMLClassificationManager().restore(MCRCategoryID.fromString(mcrId), revision);
+        MCROCFLXMLMetadataManager manager = new MCROCFLXMLClassificationManager();
+        manager.setRepositoryKey(MCRConfiguration2.getStringOrThrow("MCR.Classification.Manager.Repository"));
+        manager.restore(MCRCategoryID.fromString(mcrId), revision);
     }
 
     @MCRCommand(syntax = "restore ocfl user {0} rev {1}",
