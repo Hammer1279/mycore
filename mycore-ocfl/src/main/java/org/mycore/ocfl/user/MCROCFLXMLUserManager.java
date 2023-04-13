@@ -206,7 +206,8 @@ public class MCROCFLXMLUserManager {
             .orElse(MCROCFLDeleteUtils.checkPurgeUser(ocflUserID))) {
             repository.rollbackToVersion(version);
         } else {
-            repository.replicateVersionAsHead(version, null);
+            VersionInfo versionInfo = repository.getObject(version).getVersionInfo();
+            repository.replicateVersionAsHead(version, versionInfo);
         }
     }
 

@@ -193,7 +193,8 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
             .orElse(MCROCFLDeleteUtils.checkPurgeObject(mcrid, prefix))) {
             repo.rollbackToVersion(version);
         } else {
-            repo.replicateVersionAsHead(version, null);
+            VersionInfo versionInfo = repo.getObject(version).getVersionInfo();
+            repo.replicateVersionAsHead(version, versionInfo);
         }
     }
 

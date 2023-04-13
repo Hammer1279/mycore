@@ -134,7 +134,8 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
             .orElse(MCROCFLDeleteUtils.checkPurgeClass(mcrid))) {
             repo.rollbackToVersion(version);
         } else {
-            repo.replicateVersionAsHead(version, null);
+            VersionInfo versionInfo = repo.getObject(version).getVersionInfo();
+            repo.replicateVersionAsHead(version, versionInfo);
         }
     }
 
