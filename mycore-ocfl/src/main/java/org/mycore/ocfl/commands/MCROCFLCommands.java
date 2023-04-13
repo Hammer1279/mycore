@@ -194,8 +194,10 @@ public class MCROCFLCommands {
 
     @MCRCommand(syntax = "repair classification {0} from ocfl with version {1}",
         help = "restore a specified revision of a ocfl classification backup to the primary classification store")
-    public static void writeClassToDbVersioned(String classId, String revision) throws URISyntaxException, JDOMException, IOException, SAXException {
-        MCROCFLXMLClassificationManager manager = MCRConfiguration2.<MCROCFLXMLClassificationManager>getSingleInstanceOf("MCR.Classification.Manager").orElseThrow();
+    public static void writeClassToDbVersioned(String classId, String revision)
+        throws URISyntaxException, JDOMException, IOException, SAXException {
+        MCROCFLXMLClassificationManager manager = MCRConfiguration2
+            .<MCROCFLXMLClassificationManager>getSingleInstanceOf("MCR.Classification.Manager").orElseThrow();
         MCRCategoryID cId = MCRCategoryID.fromString(classId);
         MCRContent content = manager.retrieveContent(cId, revision);
         MCRCategory category = MCRXMLTransformer.getCategory(content.asXML());
@@ -210,7 +212,8 @@ public class MCROCFLCommands {
 
     @MCRCommand(syntax = "repair classification {0} from ocfl",
         help = "restore the latest revision of a ocfl classification backup to the primary classification store")
-    public static void writeClassToDb(String classId) throws URISyntaxException, JDOMException, IOException, SAXException {
+    public static void writeClassToDb(String classId)
+        throws URISyntaxException, JDOMException, IOException, SAXException {
         writeClassToDbVersioned(classId, null);
     }
 
@@ -460,7 +463,7 @@ public class MCROCFLCommands {
     // TODO add the other bulk restore commands
 
     @MCRCommand(syntax = "restore ocfl object {0} rev {1}",
-        help = "Restore me!")
+        help = "Restore the object {0} with its revision {1} in ocfl store")
     public static void restoreObj(String mcrId, String revision) {
         MCROCFLXMLMetadataManager manager = new MCROCFLXMLMetadataManager();
         manager.setRepositoryKey(MCRConfiguration2.getStringOrThrow("MCR.Metadata.Manager.Repository"));
@@ -468,7 +471,7 @@ public class MCROCFLCommands {
     }
 
     @MCRCommand(syntax = "restore ocfl class {0} rev {1}",
-        help = "Restore me!")
+        help = "Restore the classification {0} with its revision {1} in ocfl store")
     public static void restoreClass(String mcrId, String revision) {
         MCROCFLXMLClassificationManager manager = MCRConfiguration2
             .<MCROCFLXMLClassificationManager>getSingleInstanceOf("MCR.Classification.Manager").orElseThrow();
@@ -476,7 +479,7 @@ public class MCROCFLCommands {
     }
 
     @MCRCommand(syntax = "restore ocfl user {0} rev {1}",
-        help = "Restore me!")
+        help = "Restore the user {0} with its revision {1} in ocfl store")
     public static void restoreUser(String mcrId, String revision) {
         new MCROCFLXMLUserManager().restoreUser(mcrId, revision);
     }
