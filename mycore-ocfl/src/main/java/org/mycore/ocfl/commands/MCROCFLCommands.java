@@ -241,8 +241,8 @@ public class MCROCFLCommands {
         manager.purge(mcrid, new Date(), MCRUserManager.getCurrentUser().getUserName(), true);
     }
 
-    @MCRCommand(syntax = "purge class {0} from ocfl",
-        help = "Permanently delete class {0} and its history from ocfl")
+    @MCRCommand(syntax = "purge classification {0} from ocfl",
+        help = "Permanently delete classification {0} and its history from ocfl")
     public static void purgeClass(String mcrCgIdString) throws IOException {
         MCRCategoryID mcrCgId = MCRCategoryID.fromString(mcrCgIdString);
         if (!mcrCgId.isRootID()) {
@@ -326,7 +326,7 @@ public class MCROCFLCommands {
         confirmPurgeMarked = false;
     }
 
-    @MCRCommand(syntax = "purge marked classes from ocfl",
+    @MCRCommand(syntax = "purge marked classifications from ocfl",
         help = "Permanently delete all hidden/archived ocfl classes")
     public static void purgeMarkedClasses() throws IOException {
         if (!confirmPurgeMarked) {
@@ -375,7 +375,7 @@ public class MCROCFLCommands {
     }
 
     @MCRCommand(syntax = "restore all ocfl entries matching {0}",
-        help = "Restores all ocfj entries that match the given regex, use .* for all")
+        help = "Restores all ocfl entries that match the given regex, use .* for all")
     public static List<String> restoreMatchAll(String regex) {
         List<String> commands = new ArrayList<>();
         String[] parts = regex.split(":", 2);
@@ -438,7 +438,7 @@ public class MCROCFLCommands {
                 .getHeadVersion().getVersionInfo().getMessage()))
             .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.CLASSIFICATION, ""))
             .filter(obj -> obj.matches(regex))
-            .map(id -> "restore ocfl class " + id + " rev v"
+            .map(id -> "restore ocfl classification " + id + " rev v"
                 + (repository.describeObject(MCROCFLObjectIDPrefixHelper.CLASSIFICATION + id).getVersionMap().size()
                     - 1))
             .collect(Collectors.toList());
@@ -470,7 +470,7 @@ public class MCROCFLCommands {
         manager.restore(MCRObjectID.getInstance(mcrId), revision);
     }
 
-    @MCRCommand(syntax = "restore ocfl class {0} rev {1}",
+    @MCRCommand(syntax = "restore ocfl classification {0} rev {1}",
         help = "Restore the classification {0} with its revision {1} in ocfl store")
     public static void restoreClass(String mcrId, String revision) {
         MCROCFLXMLClassificationManager manager = MCRConfiguration2
