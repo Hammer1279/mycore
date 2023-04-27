@@ -238,7 +238,7 @@ public class MCROCFLCommands {
         MCRObjectID mcrid = MCRObjectID.getInstance(mcridString);
         MCROCFLXMLMetadataManager manager = new MCROCFLXMLMetadataManager();
         manager.setRepositoryKey(MCRConfiguration2.getStringOrThrow("MCR.Metadata.Manager.Repository"));
-        manager.purge(mcrid, new Date(), MCRUserManager.getCurrentUser().getUserName(), true);
+        manager.purge(mcrid, new Date(), MCRUserManager.getCurrentUser().getUserName());
     }
 
     @MCRCommand(syntax = "purge classification {0} from ocfl",
@@ -322,7 +322,7 @@ public class MCROCFLCommands {
             .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.MCROBJECT, ""))
             .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.MCRDERIVATE, ""))
             .forEach(oId -> manager.purge(MCRObjectID.getInstance(oId), new Date(),
-                MCRUserManager.getCurrentUser().getUserName(), true));
+                MCRUserManager.getCurrentUser().getUserName()));
         confirmPurgeMarked = false;
     }
 

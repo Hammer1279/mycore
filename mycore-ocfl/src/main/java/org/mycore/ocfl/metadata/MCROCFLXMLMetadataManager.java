@@ -34,9 +34,7 @@ import java.util.stream.IntStream;
 
 import org.jdom2.Document;
 import org.jdom2.JDOMException;
-import org.mycore.access.MCRAccessManager;
 import org.mycore.common.MCRCache;
-import org.mycore.common.MCRException;
 import org.mycore.common.MCRPersistenceException;
 import org.mycore.common.MCRSession;
 import org.mycore.common.MCRSessionMgr;
@@ -143,7 +141,7 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
             : MCROCFLObjectIDPrefixHelper.MCROBJECT;
 
         if (MCROCFLDeleteUtils.checkPurgeObject(mcrid, prefix)) {
-            purge(mcrid, date, user, true);
+            purge(mcrid, date, user);
             return;
         }
 
@@ -162,15 +160,10 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
         });
     }
 
-    // FIXME remove permission check 
-    public void purge(MCRObjectID mcrid, Date date, String user, boolean skipPermCheck) {
+    public void purge(MCRObjectID mcrid, Date date, String user) {
         String ocflObjectID = getOCFLObjectID(mcrid);
         if (!getRepository().containsObject(ocflObjectID)) {
             throw new MCRUsageException("Cannot delete nonexistent object '" + ocflObjectID + "'");
-        }
-
-        if (!skipPermCheck && !MCRAccessManager.checkPermission(mcrid, MCRAccessManager.PERMISSION_HISTORY_DELETE)) {
-            throw new MCRException("You are not authorized to delete '" + ocflObjectID + "' and its history!");
         }
 
         OcflRepository repo = getRepository();
