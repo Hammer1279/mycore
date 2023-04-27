@@ -137,6 +137,7 @@ public class MCROCFLXMLUserManager {
         if (exists(ocflUserID)) {
             // throw new MCRUsageException("The User '" + user.getUserID() + "' already exists in OCFL Repository");
             updateUser(user);
+            return;
         }
 
         VersionInfo info = new VersionInfo()
