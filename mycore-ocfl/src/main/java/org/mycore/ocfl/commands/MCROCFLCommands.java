@@ -71,12 +71,6 @@ public class MCROCFLCommands {
 
     private static boolean confirmPurgeMarked = false;
 
-    private static String metadataRepositoryKey
-        = MCRConfiguration2.getString("MCR.Metadata.Manager.Repository").orElse(null);
-    private static String classificationRepositoryKey
-        = MCRConfiguration2.getString("MCR.Classification.Manager.Repository").orElse(null);
-    private static String userRepositoryKey = MCRConfiguration2.getString("MCR.Users.Manager.Repository").orElse(null);
-
     @MCRCommand(syntax = "migrate metadata to repository {0}",
         help = "migrates all the metadata to the ocfl " +
             "repository with the id {0}")
