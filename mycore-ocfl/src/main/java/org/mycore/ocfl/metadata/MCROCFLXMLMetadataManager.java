@@ -168,27 +168,6 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
 
         OcflRepository repo = getRepository();
         repo.purgeObject(ocflObjectID);
-        // VersionInfo headVersion = repo.describeObject(ocflObjectID).getHeadVersion().getVersionInfo();
-        // TODO find a good way to do this
-        // repo.updateObject(ObjectVersionId.head(ocflObjectID), buildVersionInfo("Purged", date, user), null);
-    }
-
-    public void restore(MCRObjectID mcrid, String revision) {
-        String prefix = "derivate".equals(mcrid.getTypeId()) ? MCROCFLObjectIDPrefixHelper.MCRDERIVATE
-            : MCROCFLObjectIDPrefixHelper.MCROBJECT;
-        String ocflObjectID = getOCFLObjectID(mcrid);
-        OcflRepository repo = getRepository();
-        if (!repo.containsObject(ocflObjectID)) {
-            throw new MCRUsageException("Cannot restore nonexistent object '" + ocflObjectID + "'");
-        }
-        ObjectVersionId version = ObjectVersionId.version(ocflObjectID, revision);
-        if (MCROCFLDeleteUtils.regexMatcher(ocflObjectID, MCROCFLDeleteUtils.PROPERTY_RESTORE)
-            .orElse(MCROCFLDeleteUtils.checkPurgeObject(mcrid, prefix))) {
-            repo.rollbackToVersion(version);
-        } else {
-            VersionInfo versionInfo = repo.getObject(version).getVersionInfo();
-            repo.replicateVersionAsHead(version, versionInfo);
-        }
     }
 
     @Override
@@ -269,15 +248,9 @@ public class MCROCFLXMLMetadataManager implements MCRXMLMetadataManagerAdapter {
             throw new IOException("Cannot read already deleted object '" + ocflObjectID + "'");
         }
 
-        // Boolean archived
-        //     = convertMessageToType(repo.getObject(ObjectVersionId.head(ocflObjectID)).getVersionInfo().getMessage())
-        //         == MCROCFLMetadataVersion.DELETED;
-
         try (InputStream storedContentStream = storeObject.getFile(buildFilePath(mcrid)).getStream()) {
-            Document xml = new MCRStreamContent(storedContentStream).asXML();
-            
+            Document xml = new MCRStreamContent(storedContentStream).asXML();           
             xml.getRootElement().setAttribute("rev", revision); // bugfix: MCR-2510, PR #1373
-            // xml.getRootElement().setAttribute("archive", archived.toString());
             return new MCRJDOMContent(xml);
         } catch (JDOMException | SAXException e) {
             throw new IOException("Can not parse XML from OCFL-Store", e);

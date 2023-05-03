@@ -123,22 +123,6 @@ public class MCROCFLXMLClassificationManager implements MCRXMLClassificationMana
         getRepository().purgeObject(getOCFLObjectID(mcrid));
     }
 
-    public void restore(MCRCategoryID mcrid, String revision) {
-        String ocflObjectID = getOCFLObjectID(mcrid);
-        OcflRepository repo = getRepository();
-        if (!repo.containsObject(ocflObjectID)) {
-            throw new MCRUsageException("Cannot restore nonexistent category '" + ocflObjectID + "'");
-        }
-        ObjectVersionId version = ObjectVersionId.version(ocflObjectID, revision);
-        if (MCROCFLDeleteUtils.regexMatcher(ocflObjectID, MCROCFLDeleteUtils.PROPERTY_RESTORE)
-            .orElse(MCROCFLDeleteUtils.checkPurgeClass(mcrid))) {
-            repo.rollbackToVersion(version);
-        } else {
-            VersionInfo versionInfo = repo.getObject(version).getVersionInfo();
-            repo.replicateVersionAsHead(version, versionInfo);
-        }
-    }
-
     /**
      * Load a Classification from the OCFL Store.
      * @param mcrid ID of the Category

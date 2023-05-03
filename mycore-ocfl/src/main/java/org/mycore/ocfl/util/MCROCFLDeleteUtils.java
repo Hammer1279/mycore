@@ -33,33 +33,19 @@ import org.mycore.datamodel.metadata.MCRObjectID;
  */
 public final class MCROCFLDeleteUtils {
 
-    // TODO maybe a property here to add permission check here, plus if insufficient permissions,
-    // default to "error, cant do" or "no purge, only markDelete"
-    // as in: MCR.OCFL.dropHistory.unauthorizedDefaultAction="throw/error","markOnly"
-
-    // private static final String PROPERTY_PREFIX = "MCR.OCFL.instantPurge.";
     public static final String PROPERTY_PREFIX = "MCR.OCFL.dropHistory.";
     private static final String PP = PROPERTY_PREFIX;
-
-    /**
-     * for use of restore check with {@link #regexMatcher}
-     */
-    public static final Optional<String> PROPERTY_RESTORE = Optional.of("onRestore");
-
-    // private static final Function<String, Optional<Boolean>> gB = MCRConfiguration2::getBoolean;
 
     private MCROCFLDeleteUtils() {
         throw new IllegalStateException("Utility class");
     }
 
     public static boolean checkPurgeObject(MCRObjectID mcrid) {
-        String prefix = MCROCFLObjectIDPrefixHelper.MCROBJECT;
-        return checkPurgeObject(mcrid, prefix);
+        return checkPurgeObject(mcrid, MCROCFLObjectIDPrefixHelper.MCROBJECT);
     }
 
     public static boolean checkPurgeDerivate(MCRObjectID mcrid) {
-        String prefix = MCROCFLObjectIDPrefixHelper.MCRDERIVATE;
-        return checkPurgeObject(mcrid, prefix);
+        return checkPurgeObject(mcrid, MCROCFLObjectIDPrefixHelper.MCRDERIVATE);
     }
 
     public static boolean checkPurgeObject(MCRObjectID mcrid, String prefix) {
@@ -84,8 +70,7 @@ public final class MCROCFLDeleteUtils {
     }
 
     public static boolean checkPurgeClass(MCRCategoryID mcrid) {
-        String prefix = MCROCFLObjectIDPrefixHelper.CLASSIFICATION;
-        return checkPurgeClass(mcrid, prefix);
+        return checkPurgeClass(mcrid, MCROCFLObjectIDPrefixHelper.CLASSIFICATION);
     }
 
     public static boolean checkPurgeClass(MCRCategoryID mcrid, String prefix) {
@@ -98,15 +83,13 @@ public final class MCROCFLDeleteUtils {
         doPurge = getBoolean(PP + ocflType).orElse(doPurge);
         doPurge = getBoolean(PP + mcrid.getRootID()).orElse(doPurge);
         doPurge = getBoolean(PP + ocflType + "." + mcrid.getRootID()).orElse(doPurge);
-
         doPurge = regexMatcher(mcrid.toString(), getString(PP + "postMatch")).orElse(doPurge);
         doPurge = regexMatcher(mcrid.toString(), getString(PP + ocflType + ".postMatch")).orElse(doPurge);
         return doPurge;
     }
 
     public static boolean checkPurgeUser(String userID) {
-        String prefix = MCROCFLObjectIDPrefixHelper.USER;
-        return checkPurgeUser(userID, prefix);
+        return checkPurgeUser(userID, MCROCFLObjectIDPrefixHelper.USER);
     }
 
     public static boolean checkPurgeUser(String userID, String prefix) {
