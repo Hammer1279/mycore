@@ -21,14 +21,12 @@ package org.mycore.ocfl.commands;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.mycore.common.config.MCRConfiguration2;
-import org.mycore.datamodel.classifications2.MCRCategoryID;
 import org.mycore.datamodel.metadata.MCRObjectID;
 import org.mycore.frontend.cli.annotation.MCRCommand;
 import org.mycore.frontend.cli.annotation.MCRCommandGroup;
@@ -37,7 +35,6 @@ import org.mycore.ocfl.metadata.MCROCFLXMLMetadataManager;
 import org.mycore.ocfl.repository.MCROCFLRepositoryProvider;
 import org.mycore.ocfl.user.MCROCFLXMLUserManager;
 import org.mycore.ocfl.util.MCROCFLObjectIDPrefixHelper;
-import org.mycore.user2.MCRUserManager;
 
 import edu.wisc.library.ocfl.api.OcflRepository;
 
@@ -133,7 +130,7 @@ public class MCROCFLRegexCommands {
             .collect(Collectors.toList());
     }
 
-    // TODO test this
+    // TODO works
     @MCRCommand(syntax = "purge ocfl classifications matching {0}",
         help = "Purge ocfl classifications that are matching the RegEx {0}")
     public static List<String> purgeMatchClass(String regex) {
@@ -207,10 +204,10 @@ public class MCROCFLRegexCommands {
     // TODO test this
     @MCRCommand(syntax = "purge marked ocfl objects matching {0}",
         help = "Purge marked ocfl objects that are matching the RegEx {0}")
-    public static void purgeMarkedMatchObj(String regex) {
+    public static List<String> purgeMarkedMatchObj(String regex) {
         MCROCFLXMLMetadataManager manager = new MCROCFLXMLMetadataManager();
         manager.setRepositoryKey(metadataRepositoryKey);
-        manager.getRepository().listObjectIds()
+        return manager.getRepository().listObjectIds()
             .filter(obj -> obj.startsWith(MCROCFLObjectIDPrefixHelper.MCROBJECT)
                 || obj.startsWith(MCROCFLObjectIDPrefixHelper.MCRDERIVATE))
             .filter(obj -> "Deleted"
@@ -218,36 +215,42 @@ public class MCROCFLRegexCommands {
             .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.MCROBJECT, ""))
             .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.MCRDERIVATE, ""))
             .filter(obj -> obj.matches(regex))
-            .forEach(oId -> manager.purge(MCRObjectID.getInstance(oId), new Date(),
-                MCRUserManager.getCurrentUser().getUserName()));
+            .map(id -> "purge object " + id + " from ocfl")
+            .collect(Collectors.toList());
+        // .forEach(oId -> manager.purge(MCRObjectID.getInstance(oId), new Date(),
+        //     MCRUserManager.getCurrentUser().getUserName()));
     }
 
     // TODO test this
     @MCRCommand(syntax = "purge marked ocfl classifications matching {0}",
         help = "Purge marked ocfl classifications that are matching the RegEx {0}")
-    public static void purgeMarkedMatchClass(String regex) {
+    public static List<String> purgeMarkedMatchClass(String regex) {
         OcflRepository repository = MCROCFLRepositoryProvider.getRepository(classificationRepositoryKey);
-        repository.listObjectIds()
+        return repository.listObjectIds()
             .filter(obj -> obj.startsWith(MCROCFLObjectIDPrefixHelper.CLASSIFICATION))
             .filter(obj -> MCROCFLXMLClassificationManager.MESSAGE_DELETED.equals(repository.describeObject(obj)
                 .getHeadVersion().getVersionInfo().getMessage()))
             .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.CLASSIFICATION, ""))
             .filter(obj -> obj.matches(regex))
-            .forEach(cId -> new MCROCFLXMLClassificationManager().purge(MCRCategoryID.fromString(cId)));
+            .map(id -> "purge classification " + id + " from ocfl")
+            .collect(Collectors.toList());
+        // .forEach(cId -> new MCROCFLXMLClassificationManager().purge(MCRCategoryID.fromString(cId)));
     }
 
     // TODO test this
     @MCRCommand(syntax = "purge marked ocfl users matching {0}",
         help = "Purge marked ocfl users that are matching the RegEx {0}")
-    public static void purgeMarkedMatchUsr(String regex) {
+    public static List<String> purgeMarkedMatchUsr(String regex) {
         OcflRepository repository = MCROCFLRepositoryProvider.getRepository(userRepositoryKey);
-        repository.listObjectIds()
+        return repository.listObjectIds()
             .filter(obj -> obj.startsWith(MCROCFLObjectIDPrefixHelper.USER))
             .filter(obj -> MCROCFLXMLUserManager.MESSAGE_DELETED.equals(repository.describeObject(obj)
                 .getHeadVersion().getVersionInfo().getMessage()))
             .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.USER, ""))
             .filter(obj -> obj.matches(regex))
-            .forEach(u -> new MCROCFLXMLUserManager().purgeUser(u));
+            .map(id -> "purge user " + id + " from ocfl")
+            .collect(Collectors.toList());
+        // .forEach(u -> new MCROCFLXMLUserManager().purgeUser(u));
     }
 
     // Restore
