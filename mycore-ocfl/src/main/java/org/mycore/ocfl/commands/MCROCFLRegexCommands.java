@@ -52,17 +52,18 @@ public class MCROCFLRegexCommands {
 
     private static boolean confirmPurge = false;
 
-    private static String metadataRepositoryKey = MCRConfiguration2.getStringOrThrow("MCR.Metadata.Manager.Repository");
+    private static String metadataRepositoryKey
+        = MCRConfiguration2.getString("MCR.Metadata.Manager.Repository").orElse(null);
     private static String classificationRepositoryKey
-        = MCRConfiguration2.getStringOrThrow("MCR.Classification.Manager.Repository");
-    private static String userRepositoryKey = MCRConfiguration2.getStringOrThrow("MCR.Users.Manager.Repository");
+        = MCRConfiguration2.getString("MCR.Classification.Manager.Repository").orElse(null);
+    private static String userRepositoryKey = MCRConfiguration2.getString("MCR.Users.Manager.Repository").orElse(null);
 
     /*
      * add other regex now as well or do it in a new pull request?
      * since it has nothing to do with MCR-2529
-     * delete,update,sync,repair
+     * delete,update,sync
      * 
-     * maybe even a regex list command to see what it would be affecting
+     * maybe even a regex list command to see what it would be affecting, aka dry run
      */
 
     // Purge
@@ -84,6 +85,7 @@ public class MCROCFLRegexCommands {
         if (parts.length < 2) {
             parts = Arrays.copyOf(parts, parts.length + 1);
             parts[1] = parts[0];
+            parts[0] = ".*";
         }
         parts[0] += ":";
         if (MCROCFLObjectIDPrefixHelper.MCROBJECT.matches(parts[0])
@@ -92,12 +94,12 @@ public class MCROCFLRegexCommands {
             confirmPurge = true;
             commands.addAll(purgeMatchObj(parts[1]));
         }
-        if (MCROCFLObjectIDPrefixHelper.MCROBJECT.matches(parts[0])) {
+        if (MCROCFLObjectIDPrefixHelper.CLASSIFICATION.matches(parts[0])) {
             // commands.add("purge ocfl classifications matching " + parts[1]);
             confirmPurge = true;
             commands.addAll(purgeMatchClass(parts[1]));
         }
-        if (MCROCFLObjectIDPrefixHelper.MCROBJECT.matches(parts[0])) {
+        if (MCROCFLObjectIDPrefixHelper.USER.matches(parts[0])) {
             // commands.add("purge ocfl users matching " + parts[1]);
             confirmPurge = true;
             commands.addAll(purgeMatchUsr(parts[1]));
@@ -114,7 +116,7 @@ public class MCROCFLRegexCommands {
         manager.setRepositoryKey(metadataRepositoryKey);
         if (!confirmPurge) {
             LOGGER.info("\n"
-                +"\u001B[93m" + "Enter the command again to confirm \u001B[4mPERMANENTLY\u001B[24m deleting ALL"
+                + "\u001B[93m" + "Enter the command again to confirm \u001B[4mPERMANENTLY\u001B[24m deleting ALL"
                 + " matching OCFL objects." + "\u001B[0m" + "\n"
                 + "\u001B[41m" + "THIS ACTION CANNOT BE UNDONE!" + "\u001B[0m");
             confirmPurge = true;
@@ -186,16 +188,17 @@ public class MCROCFLRegexCommands {
         if (parts.length < 2) {
             parts = Arrays.copyOf(parts, parts.length + 1);
             parts[1] = parts[0];
+            parts[0] = ".*";
         }
         parts[0] += ":";
         if (MCROCFLObjectIDPrefixHelper.MCROBJECT.matches(parts[0])
             || MCROCFLObjectIDPrefixHelper.MCRDERIVATE.matches(parts[0])) {
             commands.add("purge marked ocfl objects matching " + parts[1]);
         }
-        if (MCROCFLObjectIDPrefixHelper.MCROBJECT.matches(parts[0])) {
+        if (MCROCFLObjectIDPrefixHelper.CLASSIFICATION.matches(parts[0])) {
             commands.add("purge marked ocfl classifications matching " + parts[1]);
         }
-        if (MCROCFLObjectIDPrefixHelper.MCROBJECT.matches(parts[0])) {
+        if (MCROCFLObjectIDPrefixHelper.USER.matches(parts[0])) {
             commands.add("purge marked ocfl users matching " + parts[1]);
         }
         return commands;
@@ -258,16 +261,17 @@ public class MCROCFLRegexCommands {
         if (parts.length < 2) {
             parts = Arrays.copyOf(parts, parts.length + 1);
             parts[1] = parts[0];
+            parts[0] = ".*";
         }
         parts[0] += ":";
         if (MCROCFLObjectIDPrefixHelper.MCROBJECT.matches(parts[0])
             || MCROCFLObjectIDPrefixHelper.MCRDERIVATE.matches(parts[0])) {
             commands.add("restore ocfl objects matching " + parts[1]);
         }
-        if (MCROCFLObjectIDPrefixHelper.MCROBJECT.matches(parts[0])) {
+        if (MCROCFLObjectIDPrefixHelper.CLASSIFICATION.matches(parts[0])) {
             commands.add("restore ocfl classifications matching " + parts[1]);
         }
-        if (MCROCFLObjectIDPrefixHelper.MCROBJECT.matches(parts[0])) {
+        if (MCROCFLObjectIDPrefixHelper.USER.matches(parts[0])) {
             commands.add("restore ocfl users matching " + parts[1]);
         }
         return commands;
@@ -287,7 +291,7 @@ public class MCROCFLRegexCommands {
             .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.MCROBJECT, ""))
             .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.MCRDERIVATE, ""))
             .filter(obj -> obj.matches(regex))
-            .map(id -> "restore ocfl object " + id + " rev v"
+            .map(id -> "restore object " + id + " from ocfl with version v"
                 + manager.listRevisions(MCRObjectID.getInstance(id)).size())
             .collect(Collectors.toList());
     }
@@ -303,7 +307,7 @@ public class MCROCFLRegexCommands {
                 .getHeadVersion().getVersionInfo().getMessage()))
             .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.CLASSIFICATION, ""))
             .filter(obj -> obj.matches(regex))
-            .map(id -> "restore ocfl classification " + id + " rev v"
+            .map(id -> "restore classification " + id + " from ocfl with version v"
                 + (repository.describeObject(MCROCFLObjectIDPrefixHelper.CLASSIFICATION + id).getVersionMap().size()
                     - 1))
             .collect(Collectors.toList());
@@ -320,7 +324,7 @@ public class MCROCFLRegexCommands {
                 .getHeadVersion().getVersionInfo().getMessage()))
             .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.USER, ""))
             .filter(obj -> obj.matches(regex))
-            .map(id -> "restore ocfl object " + id + " rev v"
+            .map(id -> "restore user " + id + " from ocfl with version v"
                 + (repository.describeObject(MCROCFLObjectIDPrefixHelper.USER + id).getVersionMap().size() - 1))
             .collect(Collectors.toList());
     }
