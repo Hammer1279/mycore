@@ -56,16 +56,13 @@ public class MCROCFLRegexCommands {
     private static String userRepositoryKey = MCRConfiguration2.getString("MCR.Users.Manager.Repository").orElse(null);
 
     /*
-     * add other regex now as well or do it in a new pull request?
-     * since it has nothing to do with MCR-2529
+     * add other regex as well in the future:
      * delete,update,sync
-     * 
-     * maybe even a regex list command to see what it would be affecting, aka dry run
+     * list -> dry run
      */
 
     // Purge
 
-    // TODO test this
     @MCRCommand(syntax = "purge all ocfl entries matching {0}",
         help = "Purge all ocfl entries that match the given regex, use .* for all")
     public static List<String> purgeMatchAll(String regex) {
@@ -87,17 +84,14 @@ public class MCROCFLRegexCommands {
         parts[0] += ":";
         if (MCROCFLObjectIDPrefixHelper.MCROBJECT.matches(parts[0])
             || MCROCFLObjectIDPrefixHelper.MCRDERIVATE.matches(parts[0])) {
-            // commands.add("purge ocfl objects matching " + parts[1]);
             confirmPurge = true;
             commands.addAll(purgeMatchObj(parts[1]));
         }
         if (MCROCFLObjectIDPrefixHelper.CLASSIFICATION.matches(parts[0])) {
-            // commands.add("purge ocfl classifications matching " + parts[1]);
             confirmPurge = true;
             commands.addAll(purgeMatchClass(parts[1]));
         }
         if (MCROCFLObjectIDPrefixHelper.USER.matches(parts[0])) {
-            // commands.add("purge ocfl users matching " + parts[1]);
             confirmPurge = true;
             commands.addAll(purgeMatchUsr(parts[1]));
         }
@@ -105,7 +99,6 @@ public class MCROCFLRegexCommands {
         return commands;
     }
 
-    // TODO test this
     @MCRCommand(syntax = "purge ocfl objects matching {0}",
         help = "Purge ocfl objects that are matching the RegEx {0}")
     public static List<String> purgeMatchObj(String regex) {
@@ -130,7 +123,6 @@ public class MCROCFLRegexCommands {
             .collect(Collectors.toList());
     }
 
-    // TODO works
     @MCRCommand(syntax = "purge ocfl classifications matching {0}",
         help = "Purge ocfl classifications that are matching the RegEx {0}")
     public static List<String> purgeMatchClass(String regex) {
@@ -152,7 +144,6 @@ public class MCROCFLRegexCommands {
             .collect(Collectors.toList());
     }
 
-    // TODO test this
     @MCRCommand(syntax = "purge ocfl users matching {0}",
         help = "Purge ocfl users that are matching the RegEx {0}")
     public static List<String> purgeMatchUsr(String regex) {
@@ -176,7 +167,6 @@ public class MCROCFLRegexCommands {
 
     // Purge Marked
 
-    // TODO finish this
     @MCRCommand(syntax = "purge all marked ocfl entries matching {0}",
         help = "Purge all marked ocfl entries that match the given regex, use .* for all")
     public static List<String> purgeMarkedMatchAll(String regex) {
@@ -201,7 +191,6 @@ public class MCROCFLRegexCommands {
         return commands;
     }
 
-    // TODO test this
     @MCRCommand(syntax = "purge marked ocfl objects matching {0}",
         help = "Purge marked ocfl objects that are matching the RegEx {0}")
     public static List<String> purgeMarkedMatchObj(String regex) {
@@ -217,11 +206,8 @@ public class MCROCFLRegexCommands {
             .filter(obj -> obj.matches(regex))
             .map(id -> "purge object " + id + " from ocfl")
             .collect(Collectors.toList());
-        // .forEach(oId -> manager.purge(MCRObjectID.getInstance(oId), new Date(),
-        //     MCRUserManager.getCurrentUser().getUserName()));
     }
 
-    // TODO test this
     @MCRCommand(syntax = "purge marked ocfl classifications matching {0}",
         help = "Purge marked ocfl classifications that are matching the RegEx {0}")
     public static List<String> purgeMarkedMatchClass(String regex) {
@@ -234,10 +220,8 @@ public class MCROCFLRegexCommands {
             .filter(obj -> obj.matches(regex))
             .map(id -> "purge classification " + id + " from ocfl")
             .collect(Collectors.toList());
-        // .forEach(cId -> new MCROCFLXMLClassificationManager().purge(MCRCategoryID.fromString(cId)));
     }
 
-    // TODO test this
     @MCRCommand(syntax = "purge marked ocfl users matching {0}",
         help = "Purge marked ocfl users that are matching the RegEx {0}")
     public static List<String> purgeMarkedMatchUsr(String regex) {
@@ -250,12 +234,10 @@ public class MCROCFLRegexCommands {
             .filter(obj -> obj.matches(regex))
             .map(id -> "purge user " + id + " from ocfl")
             .collect(Collectors.toList());
-        // .forEach(u -> new MCROCFLXMLUserManager().purgeUser(u));
     }
 
     // Restore
 
-    // TODO test this
     @MCRCommand(syntax = "restore all ocfl entries matching {0}",
         help = "Restores all ocfl entries that match the given regex, use .* for all")
     public static List<String> restoreMatchAll(String regex) {
@@ -280,7 +262,6 @@ public class MCROCFLRegexCommands {
         return commands;
     }
 
-    // TODO test this
     @MCRCommand(syntax = "restore ocfl objects matching {0}",
         help = "Restore ocfl objects that are matching the RegEx {0}")
     public static List<String> restoreMatchObj(String regex) {
@@ -295,11 +276,10 @@ public class MCROCFLRegexCommands {
             .map(obj -> obj.replace(MCROCFLObjectIDPrefixHelper.MCRDERIVATE, ""))
             .filter(obj -> obj.matches(regex))
             .map(id -> "restore object " + id + " from ocfl with version v"
-                + manager.listRevisions(MCRObjectID.getInstance(id)).size())
+                + (manager.listRevisions(MCRObjectID.getInstance(id)).size() - 1))
             .collect(Collectors.toList());
     }
 
-    // TODO test this
     @MCRCommand(syntax = "restore ocfl classifications matching {0}",
         help = "Restore ocfl classifications that are matching the RegEx {0}")
     public static List<String> restoreMatchClass(String regex) {
@@ -316,7 +296,6 @@ public class MCROCFLRegexCommands {
             .collect(Collectors.toList());
     }
 
-    // TODO test this
     @MCRCommand(syntax = "restore ocfl users matching {0}",
         help = "Restore ocfl users that are matching the RegEx {0}")
     public static List<String> restoreMatchUsr(String regex) {
